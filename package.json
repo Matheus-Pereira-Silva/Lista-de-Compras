@@ -8,6 +8,7 @@
     "@react-navigation/native": "^7.3.18",
     "@react-navigation/stack": "^7.10.24",
     "expo": "~57.0.23",
+    "expo-image": "~57.0.5",
     "expo-status-bar": "~57.0.1",
     "firebase": "^12.19.0",
     "react": "19.2.3",

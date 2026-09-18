@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { signOut } from 'firebase/auth';
 import {
   addDoc,
@@ -22,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../services/firebase';
 
 export default function MinhasListasScreen() {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,10 @@ export default function MinhasListasScreen() {
   };
 
   const abrirLista = (lista) => {
-    console.log('Abrir lista:', lista.id);
+    navigation.navigate('DetalheLista', {
+      listaId: lista.id,
+      listaNome: lista.nome,
+    });
   };
 
   const handleLogout = () => {
