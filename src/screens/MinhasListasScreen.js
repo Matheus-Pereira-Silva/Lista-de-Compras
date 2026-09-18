@@ -21,6 +21,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
+import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
+
+const QUANTIDADE_CARDS_SKELETON = 4;
 
 export default function MinhasListasScreen() {
   const navigation = useNavigation();
@@ -107,31 +110,43 @@ export default function MinhasListasScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Carregando...</Text>
+        <View style={styles.listContent}>
+          {Array.from({ length: QUANTIDADE_CARDS_SKELETON }).map((_, indice) => (
+            <View key={indice} style={styles.card}>
+              <SkeletonBlock
+                width="55%"
+                height={18}
+                borderRadius={4}
+                style={styles.skeletonTitulo}
+              />
+              <SkeletonBlock width="30%" height={14} borderRadius={4} />
+            </View>
+          ))}
         </View>
       ) : listas.length === 0 ? (
-        <View style={styles.emptyContainer}>
+        <FadeInView style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
             Você ainda não tem nenhuma lista.{'\n'}Toque no + para criar a primeira.
           </Text>
-        </View>
+        </FadeInView>
       ) : (
-        <FlatList
-          data={listas}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => abrirLista(item)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.cardTitle}>{item.nome}</Text>
-              <Text style={styles.cardSubtitle}>0 itens</Text>
-            </TouchableOpacity>
-          )}
-        />
+        <FadeInView style={styles.listaContainer}>
+          <FlatList
+            data={listas}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => abrirLista(item)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cardTitle}>{item.nome}</Text>
+                <Text style={styles.cardSubtitle}>0 itens</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </FadeInView>
       )}
 
       <TouchableOpacity
@@ -226,6 +241,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
+  listaContainer: {
+    flex: 1,
+  },
   listContent: {
     paddingHorizontal: 24,
     paddingBottom: 100,
@@ -236,6 +254,9 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 20,
     marginBottom: 12,
+  },
+  skeletonTitulo: {
+    marginBottom: 8,
   },
   cardTitle: {
     fontSize: 18,

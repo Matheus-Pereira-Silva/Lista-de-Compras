@@ -24,8 +24,10 @@ import {
 
 import { auth, db } from '../services/firebase';
 import produtosLocaisRaw from '../data/produtos.json';
+import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 
 const formatarPreco = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
+const QUANTIDADE_ITENS_SKELETON = 5;
 
 const UNIDADES = [
   { valor: 'un', icone: '📦' },
@@ -247,70 +249,100 @@ export default function DetalheListaScreen() {
 
       <View style={styles.totalContainer}>
         <Text style={styles.totalLabel}>Total estimado (pendentes)</Text>
-        <Text style={styles.totalValue}>{formatarPreco(totalEstimado)}</Text>
+        {loading ? (
+          <SkeletonBlock width={120} height={26} borderRadius={6} />
+        ) : (
+          <Text style={styles.totalValue}>{formatarPreco(totalEstimado)}</Text>
+        )}
       </View>
 
       {loading ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Carregando...</Text>
+        <View style={styles.listContent}>
+          {Array.from({ length: QUANTIDADE_ITENS_SKELETON }).map((_, indice) => (
+            <View key={indice} style={styles.itemCard}>
+              <SkeletonBlock
+                width={26}
+                height={26}
+                borderRadius={13}
+                style={styles.skeletonCheckbox}
+              />
+              <SkeletonBlock
+                width={44}
+                height={44}
+                borderRadius={12}
+                style={styles.skeletonImagem}
+              />
+              <View style={styles.itemInfo}>
+                <SkeletonBlock
+                  width="70%"
+                  height={16}
+                  borderRadius={4}
+                  style={styles.skeletonNome}
+                />
+                <SkeletonBlock width="40%" height={12} borderRadius={4} />
+              </View>
+            </View>
+          ))}
         </View>
       ) : itens.length === 0 ? (
-        <View style={styles.emptyContainer}>
+        <FadeInView style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
             Nenhum item ainda.{'\n'}Toque no + para adicionar o primeiro.
           </Text>
-        </View>
+        </FadeInView>
       ) : (
-        <FlatList
-          data={itens}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => {
-            const comprado = item.status === 'comprado';
-            return (
-              <View style={styles.itemCard}>
-                <TouchableOpacity
-                  style={[styles.checkbox, comprado && styles.checkboxChecked]}
-                  onPress={() => alternarStatus(item)}
-                  activeOpacity={0.8}
-                >
-                  {comprado && <Text style={styles.checkboxIcon}>✓</Text>}
-                </TouchableOpacity>
+        <FadeInView style={styles.listaContainer}>
+          <FlatList
+            data={itens}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => {
+              const comprado = item.status === 'comprado';
+              return (
+                <View style={styles.itemCard}>
+                  <TouchableOpacity
+                    style={[styles.checkbox, comprado && styles.checkboxChecked]}
+                    onPress={() => alternarStatus(item)}
+                    activeOpacity={0.8}
+                  >
+                    {comprado && <Text style={styles.checkboxIcon}>✓</Text>}
+                  </TouchableOpacity>
 
-                {item.icone ? (
-                  <View style={styles.itemImagemBox}>
-                    <Text style={styles.placeholderIcon}>{item.icone}</Text>
+                  {item.icone ? (
+                    <View style={styles.itemImagemBox}>
+                      <Text style={styles.placeholderIcon}>{item.icone}</Text>
+                    </View>
+                  ) : (
+                    <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
+                  )}
+
+                  <View style={styles.itemInfo}>
+                    <Text
+                      style={[styles.itemNome, comprado && styles.itemTextComprado]}
+                      numberOfLines={2}
+                    >
+                      {item.nome}
+                    </Text>
+                    <Text
+                      style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}
+                    >
+                      {item.quantidade}
+                      {item.categoria ? ` · 🏷️ ${item.categoria}` : ''}
+                    </Text>
                   </View>
-                ) : (
-                  <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
-                )}
 
-                <View style={styles.itemInfo}>
-                  <Text
-                    style={[styles.itemNome, comprado && styles.itemTextComprado]}
-                    numberOfLines={2}
-                  >
-                    {item.nome}
-                  </Text>
-                  <Text
-                    style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}
-                  >
-                    {item.quantidade}
-                    {item.categoria ? ` · 🏷️ ${item.categoria}` : ''}
-                  </Text>
+                  {typeof item.preco === 'number' && (
+                    <Text
+                      style={[styles.itemPreco, comprado && styles.itemTextComprado]}
+                    >
+                      {formatarPreco(item.preco)}
+                    </Text>
+                  )}
                 </View>
-
-                {typeof item.preco === 'number' && (
-                  <Text
-                    style={[styles.itemPreco, comprado && styles.itemTextComprado]}
-                  >
-                    {formatarPreco(item.preco)}
-                  </Text>
-                )}
-              </View>
-            );
-          }}
-        />
+              );
+            }}
+          />
+        </FadeInView>
       )}
 
       <TouchableOpacity
@@ -568,9 +600,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
+  listaContainer: {
+    flex: 1,
+  },
   listContent: {
     paddingHorizontal: 24,
     paddingBottom: 100,
+  },
+  skeletonCheckbox: {
+    marginRight: 14,
+  },
+  skeletonImagem: {
+    marginRight: 14,
+  },
+  skeletonNome: {
+    marginBottom: 6,
   },
   itemCard: {
     flexDirection: 'row',
