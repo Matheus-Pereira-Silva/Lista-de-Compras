@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   StyleSheet,
@@ -10,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
-import NetInfo from '@react-native-community/netinfo';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -25,6 +23,7 @@ import {
 } from 'firebase/firestore';
 
 import { auth, db } from '../services/firebase';
+import produtosLocaisRaw from '../data/produtos.json';
 
 const formatarPreco = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
 
@@ -34,7 +33,34 @@ const UNIDADES = [
   { valor: 'g', icone: '⚖️' },
   { valor: 'L', icone: '🧴' },
   { valor: 'ml', icone: '🧴' },
+  { valor: 'dz', icone: '🥚' },
 ];
+
+const MAX_RESULTADOS_LOCAIS = 15;
+
+function normalizarTexto(texto) {
+  return texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+// Banco local de produtos comuns: busca instantânea, sem rede, sem loading —
+// é a primeira linha de defesa contra latência/indisponibilidade da API externa.
+const produtosLocais = produtosLocaisRaw.map((produto) => ({
+  ...produto,
+  nomeNormalizado: normalizarTexto(produto.nome),
+}));
+
+function buscarProdutosLocais(termo) {
+  const termoNormalizado = normalizarTexto(termo);
+  if (!termoNormalizado) return [];
+
+  return produtosLocais
+    .filter((produto) => produto.nomeNormalizado.includes(termoNormalizado))
+    .slice(0, MAX_RESULTADOS_LOCAIS);
+}
 
 // Encapsula o fallback offline: se a imagem falhar ao carregar (sem cache e
 // sem internet), mostra um placeholder cinza em vez de deixar espaço vazio
@@ -61,39 +87,6 @@ function ImagemProduto({ uri, style }) {
   );
 }
 
-async function buscarProdutosOFF(termo) {
-  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
-    termo
-  )}&search_simple=1&action=process&json=1&countries=brazil&page_size=10`;
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'ListaCompras-TCC/1.0 (contato: matheuspereiradasilva08@gmail.com)',
-    },
-  });
-
-  const contentType = response.headers.get('content-type') || '';
-  if (!response.ok || !contentType.includes('json')) {
-    const corpo = await response.text();
-    console.error(
-      'Resposta inesperada da API de busca:',
-      response.status,
-      contentType,
-      corpo.slice(0, 300)
-    );
-    throw new Error('Resposta inesperada da API de busca');
-  }
-
-  const data = await response.json();
-  return (data.products || [])
-    .filter((produto) => produto.product_name)
-    .map((produto, index) => ({
-      id: produto.code ? String(produto.code) : `idx-${index}`,
-      nome: produto.product_name,
-      imagemUrl: produto.image_small_url || produto.image_url || null,
-    }));
-}
-
 export default function DetalheListaScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -108,16 +101,20 @@ export default function DetalheListaScreen() {
   const [salvando, setSalvando] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState(null);
 
-  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
+  const [iconeSelecionado, setIconeSelecionado] = useState(null);
   const [nome, setNome] = useState('');
   const [quantidadeNumero, setQuantidadeNumero] = useState(1);
   const [unidade, setUnidade] = useState('un');
   const [categoria, setCategoria] = useState('');
   const [precoCentavos, setPrecoCentavos] = useState(null);
+
+  // Busca local: puramente síncrona (array de 200 produtos), sem debounce
+  // nem estado de loading — é instantânea por definição.
+  const resultadosLocais = useMemo(
+    () => buscarProdutosLocais(searchTerm),
+    [searchTerm]
+  );
 
   useEffect(() => {
     const itensQuery = query(
@@ -137,70 +134,6 @@ export default function DetalheListaScreen() {
     return unsubscribe;
   }, [listaId]);
 
-  useEffect(() => {
-    const termo = searchTerm.trim();
-    if (!termo) {
-      setSearchResults([]);
-      setSearching(false);
-      setSearchError(null);
-      return;
-    }
-
-    let ignorar = false;
-    setSearching(true);
-    setSearchError(null);
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        const estadoRede = await NetInfo.fetch();
-        if (ignorar) return;
-
-        if (!estadoRede.isConnected) {
-          setSearchResults([]);
-          setSearchError('Sem conexão — adicione manualmente.');
-          return;
-        }
-
-        // A busca textual do Open Food Facts tem uma taxa alta de erros 503
-        // transitórios sob carga (medimos ~40% em testes) — várias tentativas
-        // seguidas reduzem bastante a chance de falha total.
-        const MAX_TENTATIVAS = 3;
-        let produtos;
-        let ultimoErro;
-        for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
-          if (ignorar) return;
-          try {
-            produtos = await buscarProdutosOFF(termo);
-            ultimoErro = null;
-            break;
-          } catch (erro) {
-            ultimoErro = erro;
-            if (tentativa < MAX_TENTATIVAS) {
-              await new Promise((resolve) => setTimeout(resolve, 500));
-            }
-          }
-        }
-
-        if (ignorar) return;
-        if (ultimoErro) throw ultimoErro;
-        setSearchResults(produtos);
-      } catch (error) {
-        if (!ignorar) {
-          console.error('Erro ao buscar produtos:', error);
-          setSearchResults([]);
-          setSearchError('Sem conexão — adicione manualmente.');
-        }
-      } finally {
-        if (!ignorar) setSearching(false);
-      }
-    }, 500);
-
-    return () => {
-      ignorar = true;
-      clearTimeout(timeoutId);
-    };
-  }, [searchTerm]);
-
   const totalEstimado = itens
     .filter((item) => item.status !== 'comprado' && typeof item.preco === 'number')
     .reduce((total, item) => total + item.preco, 0);
@@ -208,9 +141,7 @@ export default function DetalheListaScreen() {
   const resetarFormulario = () => {
     setEtapa('busca');
     setSearchTerm('');
-    setSearchResults([]);
-    setSearchError(null);
-    setProdutoSelecionado(null);
+    setIconeSelecionado(null);
     setNome('');
     setQuantidadeNumero(1);
     setUnidade('un');
@@ -227,14 +158,16 @@ export default function DetalheListaScreen() {
     setModalVisible(false);
   };
 
-  const selecionarProduto = (produto) => {
-    setProdutoSelecionado(produto);
+  const selecionarProdutoLocal = (produto) => {
     setNome(produto.nome);
+    setCategoria(produto.categoria);
+    setUnidade(produto.unidadeComum);
+    setIconeSelecionado(produto.icone);
     setEtapa('formulario');
   };
 
   const adicionarManualmente = () => {
-    setProdutoSelecionado(null);
+    setIconeSelecionado(null);
     setNome(searchTerm.trim());
     setEtapa('formulario');
   };
@@ -272,8 +205,8 @@ export default function DetalheListaScreen() {
       if (precoCentavos != null) {
         novoItem.preco = precoCentavos / 100;
       }
-      if (produtoSelecionado?.imagemUrl) {
-        novoItem.imagemUrl = produtoSelecionado.imagemUrl;
+      if (iconeSelecionado) {
+        novoItem.icone = iconeSelecionado;
       }
 
       await addDoc(collection(db, 'listas', listaId, 'itens'), novoItem);
@@ -344,7 +277,13 @@ export default function DetalheListaScreen() {
                   {comprado && <Text style={styles.checkboxIcon}>✓</Text>}
                 </TouchableOpacity>
 
-                <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
+                {item.icone ? (
+                  <View style={styles.itemImagemBox}>
+                    <Text style={styles.placeholderIcon}>{item.icone}</Text>
+                  </View>
+                ) : (
+                  <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
+                )}
 
                 <View style={styles.itemInfo}>
                   <Text
@@ -403,41 +342,34 @@ export default function DetalheListaScreen() {
                   autoFocus
                 />
 
-                {searching && (
-                  <ActivityIndicator
-                    color="#1D9E75"
-                    style={styles.searchLoading}
-                  />
-                )}
-
-                {!searching && searchError && (
-                  <Text style={styles.searchErrorText}>📡 {searchError}</Text>
-                )}
-
-                {!searching && !searchError && searchTerm.trim().length > 0 && (
+                {resultadosLocais.length > 0 && (
                   <FlatList
-                    data={searchResults}
-                    keyExtractor={(item) => item.id}
+                    data={resultadosLocais}
+                    keyExtractor={(item) => item.nome}
                     style={styles.searchResultsList}
                     keyboardShouldPersistTaps="handled"
-                    ListEmptyComponent={
-                      <Text style={styles.searchEmptyText}>
-                        Nenhum produto encontrado.
-                      </Text>
-                    }
                     renderItem={({ item }) => (
                       <TouchableOpacity
                         style={styles.searchResultItem}
-                        onPress={() => selecionarProduto(item)}
+                        onPress={() => selecionarProdutoLocal(item)}
                         activeOpacity={0.8}
                       >
-                        <ImagemProduto
-                          uri={item.imagemUrl}
-                          style={styles.searchResultImageBox}
-                        />
-                        <Text style={styles.searchResultNome} numberOfLines={2}>
-                          {item.nome}
-                        </Text>
+                        <View style={styles.searchResultIconBox}>
+                          <Text style={styles.searchResultIconText}>
+                            {item.icone}
+                          </Text>
+                        </View>
+                        <View style={styles.searchResultInfo}>
+                          <Text style={styles.searchResultNome} numberOfLines={1}>
+                            {item.nome}
+                          </Text>
+                          <Text
+                            style={styles.searchResultCategoria}
+                            numberOfLines={1}
+                          >
+                            {item.categoria}
+                          </Text>
+                        </View>
                       </TouchableOpacity>
                     )}
                   />
@@ -469,11 +401,12 @@ export default function DetalheListaScreen() {
                   <View style={styles.formHeaderSpacer} />
                 </View>
 
-                {produtoSelecionado?.imagemUrl && (
-                  <ImagemProduto
-                    uri={produtoSelecionado.imagemUrl}
-                    style={styles.formImagePreviewBox}
-                  />
+                {iconeSelecionado && (
+                  <View style={styles.formImagePreviewBox}>
+                    <Text style={styles.formIconPreviewText}>
+                      {iconeSelecionado}
+                    </Text>
+                  </View>
                 )}
 
                 <TextInput
@@ -757,25 +690,9 @@ const styles = StyleSheet.create({
     color: '#1D1D1D',
     marginBottom: 14,
   },
-  searchLoading: {
-    marginBottom: 14,
-  },
   searchResultsList: {
     maxHeight: 260,
     marginBottom: 14,
-  },
-  searchEmptyText: {
-    fontSize: 14,
-    color: '#6B6B6B',
-    textAlign: 'center',
-    paddingVertical: 16,
-  },
-  searchErrorText: {
-    fontSize: 14,
-    color: '#6B6B6B',
-    textAlign: 'center',
-    paddingVertical: 16,
-    marginBottom: 8,
   },
   searchResultItem: {
     flexDirection: 'row',
@@ -784,20 +701,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  searchResultImageBox: {
+  searchResultIconBox: {
     width: 40,
     height: 40,
     borderRadius: 10,
     marginRight: 12,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#EAF7F1',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+  },
+  searchResultIconText: {
+    fontSize: 20,
+  },
+  searchResultInfo: {
+    flex: 1,
   },
   searchResultNome: {
     flex: 1,
     fontSize: 15,
     color: '#1D1D1D',
+  },
+  searchResultCategoria: {
+    fontSize: 12,
+    color: '#6B6B6B',
+    marginTop: 2,
   },
   manualLink: {
     alignSelf: 'center',
@@ -834,6 +761,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  formIconPreviewText: {
+    fontSize: 36,
   },
   fieldLabel: {
     fontSize: 13,
