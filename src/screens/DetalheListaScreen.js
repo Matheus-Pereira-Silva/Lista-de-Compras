@@ -25,6 +25,8 @@ import {
 import { auth, db } from '../services/firebase';
 import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
+import { PersistentFade } from '../components/FadePresence';
+import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 const formatarPreco = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
 const QUANTIDADE_ITENS_SKELETON = 5;
@@ -89,6 +91,63 @@ function ImagemProduto({ uri, style }) {
   );
 }
 
+// Componente próprio (em vez de inline no renderItem) porque cada item
+// precisa do seu próprio estado local de debounce do indicador de
+// sincronização — hooks só funcionam de forma confiável dentro de um
+// componente de verdade, não numa função de callback qualquer.
+function ItemCard({ item, onAlternarStatus }) {
+  const pendenteDebounced = useDebouncedTrue(!!item.pendenteSincronizacao, 400);
+  const comprado = item.status === 'comprado';
+
+  return (
+    <View style={styles.itemCard}>
+      <TouchableOpacity
+        style={[styles.checkbox, comprado && styles.checkboxChecked]}
+        onPress={() => onAlternarStatus(item)}
+        activeOpacity={0.8}
+      >
+        {comprado && <Text style={styles.checkboxIcon}>✓</Text>}
+      </TouchableOpacity>
+
+      {item.icone ? (
+        <View style={styles.itemImagemBox}>
+          <Text style={styles.placeholderIcon}>{item.icone}</Text>
+        </View>
+      ) : (
+        <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
+      )}
+
+      <View style={styles.itemInfo}>
+        <Text
+          style={[styles.itemNome, comprado && styles.itemTextComprado]}
+          numberOfLines={2}
+        >
+          {item.nome}
+        </Text>
+        <Text style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}>
+          {item.quantidade}
+          {item.categoria ? ` · 🏷️ ${item.categoria}` : ''}
+        </Text>
+        {/* Altura sempre reservada — só a opacidade do texto alterna, pra
+            não fazer o card crescer/encolher quando a sincronização muda. */}
+        <PersistentFade
+          visible={pendenteDebounced}
+          slide={false}
+          style={styles.itemSincronizandoSlot}
+        >
+          <Text style={styles.itemSincronizandoTexto}>🕒 Sincronizando...</Text>
+        </PersistentFade>
+      </View>
+
+      {typeof item.preco === 'number' && (
+        <Text style={[styles.itemPreco, comprado && styles.itemTextComprado]}>
+          {formatarPreco(item.preco)}
+        </Text>
+      )}
+    </View>
+  );
+}
+
 export default function DetalheListaScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -100,7 +159,6 @@ export default function DetalheListaScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [etapa, setEtapa] = useState('busca'); // 'busca' | 'formulario'
-  const [salvando, setSalvando] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -124,14 +182,22 @@ export default function DetalheListaScreen() {
       orderBy('criadoEm', 'asc')
     );
 
-    const unsubscribe = onSnapshot(itensQuery, (snapshot) => {
-      const dados = snapshot.docs.map((docSnapshot) => ({
-        id: docSnapshot.id,
-        ...docSnapshot.data(),
-      }));
-      setItens(dados);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      itensQuery,
+      { includeMetadataChanges: true },
+      (snapshot) => {
+        const dados = snapshot.docs.map((docSnapshot) => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+          // hasPendingWrites do próprio documento (não da query inteira):
+          // true enquanto essa escrita local ainda não foi confirmada pelo
+          // servidor.
+          pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
+        }));
+        setItens(dados);
+        setLoading(false);
+      }
+    );
 
     return unsubscribe;
   }, [listaId]);
@@ -139,6 +205,9 @@ export default function DetalheListaScreen() {
   const totalEstimado = itens
     .filter((item) => item.status !== 'comprado' && typeof item.preco === 'number')
     .reduce((total, item) => total + item.preco, 0);
+
+  const temItensPendentes = itens.some((item) => item.pendenteSincronizacao);
+  const temItensPendentesDebounced = useDebouncedTrue(temItensPendentes, 400);
 
   const resetarFormulario = () => {
     setEtapa('busca');
@@ -186,38 +255,38 @@ export default function DetalheListaScreen() {
   const precoFormatado =
     precoCentavos != null ? formatarPreco(precoCentavos / 100) : '';
 
-  const criarItem = async () => {
+  const criarItem = () => {
     const nomeTrim = nome.trim();
     if (!nomeTrim) return;
 
-    setSalvando(true);
-    try {
-      const novoItem = {
-        nome: nomeTrim,
-        quantidade: `${quantidadeNumero} ${unidade}`,
-        status: 'pendente',
-        criadoPor: auth.currentUser.uid,
-        criadoEm: serverTimestamp(),
-      };
+    const novoItem = {
+      nome: nomeTrim,
+      quantidade: `${quantidadeNumero} ${unidade}`,
+      status: 'pendente',
+      criadoPor: auth.currentUser.uid,
+      criadoEm: serverTimestamp(),
+    };
 
-      const categoriaTrim = categoria.trim();
-      if (categoriaTrim) {
-        novoItem.categoria = categoriaTrim;
-      }
-      if (precoCentavos != null) {
-        novoItem.preco = precoCentavos / 100;
-      }
-      if (iconeSelecionado) {
-        novoItem.icone = iconeSelecionado;
-      }
-
-      await addDoc(collection(db, 'listas', listaId, 'itens'), novoItem);
-      fecharModal();
-    } catch (error) {
-      console.error('Erro ao criar item:', error);
-    } finally {
-      setSalvando(false);
+    const categoriaTrim = categoria.trim();
+    if (categoriaTrim) {
+      novoItem.categoria = categoriaTrim;
     }
+    if (precoCentavos != null) {
+      novoItem.preco = precoCentavos / 100;
+    }
+    if (iconeSelecionado) {
+      novoItem.icone = iconeSelecionado;
+    }
+
+    // Não aguarda a promise: o Firestore aplica a escrita localmente na
+    // hora (Optimistic UI) e sincroniza em segundo plano. Offline, essa
+    // promise só resolveria quando a rede voltasse — esperar por ela aqui
+    // deixaria o modal preso em "Salvando..." indefinidamente.
+    addDoc(collection(db, 'listas', listaId, 'itens'), novoItem).catch((error) => {
+      console.error('Erro ao criar item:', error);
+    });
+
+    fecharModal();
   };
 
   const alternarStatus = async (item) => {
@@ -246,6 +315,12 @@ export default function DetalheListaScreen() {
         </Text>
         <View style={styles.backButton} />
       </View>
+
+      <PersistentFade visible={temItensPendentesDebounced} style={styles.syncBanner}>
+        <Text style={styles.syncBannerText}>
+          ☁️ Alterações pendentes de sincronização
+        </Text>
+      </PersistentFade>
 
       <View style={styles.totalContainer}>
         <Text style={styles.totalLabel}>Total estimado (pendentes)</Text>
@@ -296,51 +371,9 @@ export default function DetalheListaScreen() {
             data={itens}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => {
-              const comprado = item.status === 'comprado';
-              return (
-                <View style={styles.itemCard}>
-                  <TouchableOpacity
-                    style={[styles.checkbox, comprado && styles.checkboxChecked]}
-                    onPress={() => alternarStatus(item)}
-                    activeOpacity={0.8}
-                  >
-                    {comprado && <Text style={styles.checkboxIcon}>✓</Text>}
-                  </TouchableOpacity>
-
-                  {item.icone ? (
-                    <View style={styles.itemImagemBox}>
-                      <Text style={styles.placeholderIcon}>{item.icone}</Text>
-                    </View>
-                  ) : (
-                    <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
-                  )}
-
-                  <View style={styles.itemInfo}>
-                    <Text
-                      style={[styles.itemNome, comprado && styles.itemTextComprado]}
-                      numberOfLines={2}
-                    >
-                      {item.nome}
-                    </Text>
-                    <Text
-                      style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}
-                    >
-                      {item.quantidade}
-                      {item.categoria ? ` · 🏷️ ${item.categoria}` : ''}
-                    </Text>
-                  </View>
-
-                  {typeof item.preco === 'number' && (
-                    <Text
-                      style={[styles.itemPreco, comprado && styles.itemTextComprado]}
-                    >
-                      {formatarPreco(item.preco)}
-                    </Text>
-                  )}
-                </View>
-              );
-            }}
+            renderItem={({ item }) => (
+              <ItemCard item={item} onAlternarStatus={alternarStatus} />
+            )}
           />
         </FadeInView>
       )}
@@ -515,7 +548,6 @@ export default function DetalheListaScreen() {
                   <TouchableOpacity
                     style={[styles.modalButton, styles.modalButtonCancel]}
                     onPress={fecharModal}
-                    disabled={salvando}
                     activeOpacity={0.8}
                   >
                     <Text style={styles.modalButtonCancelText}>Cancelar</Text>
@@ -523,12 +555,10 @@ export default function DetalheListaScreen() {
                   <TouchableOpacity
                     style={[styles.modalButton, styles.modalButtonConfirm]}
                     onPress={criarItem}
-                    disabled={salvando || !nome.trim()}
+                    disabled={!nome.trim()}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.modalButtonConfirmText}>
-                      {salvando ? 'Salvando...' : 'Adicionar'}
-                    </Text>
+                    <Text style={styles.modalButtonConfirmText}>Adicionar</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -569,6 +599,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1D1D1D',
     textAlign: 'center',
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 24,
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+  },
+  syncBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B6B6B',
   },
   totalContainer: {
     marginHorizontal: 24,
@@ -673,6 +719,14 @@ const styles = StyleSheet.create({
   itemDetalhe: {
     fontSize: 13,
     color: '#6B6B6B',
+  },
+  itemSincronizandoSlot: {
+    height: 15,
+    marginTop: 3,
+  },
+  itemSincronizandoTexto: {
+    fontSize: 11,
+    color: '#9B9B9B',
   },
   itemTextComprado: {
     textDecorationLine: 'line-through',

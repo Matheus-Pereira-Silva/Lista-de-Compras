@@ -22,6 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
+import { PersistentFade } from '../components/FadePresence';
+import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 const QUANTIDADE_CARDS_SKELETON = 4;
 
@@ -32,7 +34,6 @@ export default function MinhasListasScreen() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [novaListaNome, setNovaListaNome] = useState('');
-  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     const uid = auth.currentUser?.uid;
@@ -43,17 +44,25 @@ export default function MinhasListasScreen() {
       where('membros', 'array-contains', uid)
     );
 
-    const unsubscribe = onSnapshot(listasQuery, (snapshot) => {
-      const dados = snapshot.docs.map((docSnapshot) => ({
-        id: docSnapshot.id,
-        ...docSnapshot.data(),
-      }));
-      setListas(dados);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      listasQuery,
+      { includeMetadataChanges: true },
+      (snapshot) => {
+        const dados = snapshot.docs.map((docSnapshot) => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+          pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
+        }));
+        setListas(dados);
+        setLoading(false);
+      }
+    );
 
     return unsubscribe;
   }, []);
+
+  const temListasPendentes = listas.some((lista) => lista.pendenteSincronizacao);
+  const temListasPendentesDebounced = useDebouncedTrue(temListasPendentes, 400);
 
   const abrirModal = () => {
     setNovaListaNome('');
@@ -65,24 +74,23 @@ export default function MinhasListasScreen() {
     setNovaListaNome('');
   };
 
-  const criarLista = async () => {
+  const criarLista = () => {
     const nome = novaListaNome.trim();
     if (!nome) return;
 
-    setSalvando(true);
-    try {
-      await addDoc(collection(db, 'listas'), {
-        nome,
-        membros: [auth.currentUser.uid],
-        criadoPor: auth.currentUser.uid,
-        criadoEm: serverTimestamp(),
-      });
-      fecharModal();
-    } catch (error) {
+    // Não aguarda a promise: o Firestore aplica a criação localmente na
+    // hora (Optimistic UI) e sincroniza em segundo plano. Esperar por ela
+    // deixaria o modal preso em "Criando..." indefinidamente quando offline.
+    addDoc(collection(db, 'listas'), {
+      nome,
+      membros: [auth.currentUser.uid],
+      criadoPor: auth.currentUser.uid,
+      criadoEm: serverTimestamp(),
+    }).catch((error) => {
       console.error('Erro ao criar lista:', error);
-    } finally {
-      setSalvando(false);
-    }
+    });
+
+    fecharModal();
   };
 
   const abrirLista = (lista) => {
@@ -108,6 +116,12 @@ export default function MinhasListasScreen() {
           <Text style={styles.logoutText}>Sair</Text>
         </TouchableOpacity>
       </View>
+
+      <PersistentFade visible={temListasPendentesDebounced} style={styles.syncBanner}>
+        <Text style={styles.syncBannerText}>
+          ☁️ Alterações pendentes de sincronização
+        </Text>
+      </PersistentFade>
 
       {loading ? (
         <View style={styles.listContent}>
@@ -178,7 +192,6 @@ export default function MinhasListasScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonCancel]}
                 onPress={fecharModal}
-                disabled={salvando}
                 activeOpacity={0.8}
               >
                 <Text style={styles.modalButtonCancelText}>Cancelar</Text>
@@ -186,12 +199,10 @@ export default function MinhasListasScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonConfirm]}
                 onPress={criarLista}
-                disabled={salvando || !novaListaNome.trim()}
+                disabled={!novaListaNome.trim()}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalButtonConfirmText}>
-                  {salvando ? 'Criando...' : 'Criar'}
-                </Text>
+                <Text style={styles.modalButtonConfirmText}>Criar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -226,6 +237,22 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#6B6B6B',
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 24,
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+  },
+  syncBannerText: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#6B6B6B',
   },
