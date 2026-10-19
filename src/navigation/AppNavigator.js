@@ -5,7 +5,7 @@ import {
   createNavigationContainerRef,
 } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from '@react-native-firebase/auth';
 
 import { auth } from '../services/firebase';
 import LoginScreen from '../screens/LoginScreen';

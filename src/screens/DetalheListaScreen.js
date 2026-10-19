@@ -20,7 +20,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
 
 import { auth, db } from '../services/firebase';
 import produtosLocaisRaw from '../data/produtos.json';

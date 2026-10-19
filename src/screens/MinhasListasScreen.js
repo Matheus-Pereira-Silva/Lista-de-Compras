@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { signOut } from 'firebase/auth';
+import { signOut } from '@react-native-firebase/auth';
 import {
   addDoc,
   collection,
@@ -17,7 +17,7 @@ import {
   query,
   serverTimestamp,
   where,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
