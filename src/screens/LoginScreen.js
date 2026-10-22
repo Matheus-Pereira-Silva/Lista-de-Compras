@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import {
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from '@react-native-firebase/auth';
 
@@ -31,15 +32,24 @@ const ERROR_MESSAGES = {
 
 const DEFAULT_ERROR_MESSAGE = 'Não foi possível concluir. Tente novamente.';
 
+// Mesma mensagem tanto quando o e-mail existe quanto quando não existe —
+// de propósito, pra não deixar alguém descobrir por aqui quais e-mails
+// estão cadastrados.
+const MENSAGEM_RECUPERACAO_ENVIADA =
+  'Se esse e-mail estiver cadastrado, enviamos um link para redefinir a senha.';
+
 export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [infoMessage, setInfoMessage] = useState(null);
+  const [recuperandoSenha, setRecuperandoSenha] = useState(false);
 
   const handleSubmit = async () => {
     setErrorMessage(null);
+    setInfoMessage(null);
     setLoading(true);
     try {
       if (isSignUp) {
@@ -58,7 +68,40 @@ export default function LoginScreen() {
 
   const toggleMode = () => {
     setErrorMessage(null);
+    setInfoMessage(null);
     setIsSignUp((previous) => !previous);
+  };
+
+  const handleForgotPassword = async () => {
+    const emailTrim = email.trim();
+    if (!emailTrim) {
+      setInfoMessage(null);
+      setErrorMessage('Digite seu e-mail para recuperar a senha.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setInfoMessage(null);
+    setRecuperandoSenha(true);
+    try {
+      await sendPasswordResetEmail(auth, emailTrim);
+      setInfoMessage(MENSAGEM_RECUPERACAO_ENVIADA);
+    } catch (error) {
+      // 'user-not-found' e outros erros que revelariam se o e-mail existe
+      // caem na mesma mensagem de sucesso; só erros de verdade (e-mail
+      // malformado, sem rede, etc) mostram algo diferente.
+      if (error.code === 'auth/invalid-email') {
+        setErrorMessage('E-mail inválido. Confira e tente novamente.');
+      } else if (error.code === 'auth/network-request-failed') {
+        setErrorMessage('Falha de conexão. Verifique sua internet e tente novamente.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setErrorMessage('Muitas tentativas. Aguarde um pouco e tente novamente.');
+      } else {
+        setInfoMessage(MENSAGEM_RECUPERACAO_ENVIADA);
+      }
+    } finally {
+      setRecuperandoSenha(false);
+    }
   };
 
   return (
@@ -104,7 +147,19 @@ export default function LoginScreen() {
         onChangeText={setPassword}
       />
 
+      {!isSignUp && (
+        <TouchableOpacity
+          style={styles.forgotPasswordLink}
+          onPress={handleForgotPassword}
+          disabled={recuperandoSenha}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
+        </TouchableOpacity>
+      )}
+
       {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+      {infoMessage && <Text style={styles.infoText}>{infoMessage}</Text>}
 
       <TouchableOpacity
         style={styles.button}
@@ -179,8 +234,23 @@ const styles = StyleSheet.create({
     color: '#1D1D1D',
     marginBottom: 16,
   },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1D9E75',
+  },
   errorText: {
     color: '#D14343',
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  infoText: {
+    color: '#1D9E75',
     fontSize: 14,
     marginBottom: 16,
     textAlign: 'center',
