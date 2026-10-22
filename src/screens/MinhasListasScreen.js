@@ -32,6 +32,7 @@ export default function MinhasListasScreen() {
   const insets = useSafeAreaInsets();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [novaListaNome, setNovaListaNome] = useState('');
 
@@ -54,6 +55,20 @@ export default function MinhasListasScreen() {
           pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
         }));
         setListas(dados);
+        setErro(null);
+        setLoading(false);
+      },
+      (error) => {
+        // Sem esse callback, um erro do onSnapshot (ex: regras do Firestore
+        // em modo de teste expirando e passando a responder
+        // "permission-denied") derrubava o app inteiro sem aviso — foi
+        // exatamente isso que causou o crash logo após login/cadastro.
+        console.error('Erro ao carregar listas:', error);
+        setErro(
+          error.code === 'firestore/permission-denied'
+            ? 'Sem permissão para acessar os dados.'
+            : 'Não foi possível carregar. Tente novamente.'
+        );
         setLoading(false);
       }
     );
@@ -137,6 +152,10 @@ export default function MinhasListasScreen() {
             </View>
           ))}
         </View>
+      ) : erro ? (
+        <FadeInView style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>{erro}</Text>
+        </FadeInView>
       ) : listas.length === 0 ? (
         <FadeInView style={styles.emptyContainer}>
           <Text style={styles.emptyText}>

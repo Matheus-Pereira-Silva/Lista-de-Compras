@@ -156,6 +156,7 @@ export default function DetalheListaScreen() {
 
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [erroCarregamento, setErroCarregamento] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [etapa, setEtapa] = useState('busca'); // 'busca' | 'formulario'
@@ -195,6 +196,20 @@ export default function DetalheListaScreen() {
           pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
         }));
         setItens(dados);
+        setErroCarregamento(null);
+        setLoading(false);
+      },
+      (error) => {
+        // Sem esse callback, um erro do onSnapshot (ex: regras do Firestore
+        // em modo de teste expirando e passando a responder
+        // "permission-denied") derrubava o app inteiro sem aviso — foi
+        // exatamente isso que causou o crash logo após login/cadastro.
+        console.error('Erro ao carregar itens:', error);
+        setErroCarregamento(
+          error.code === 'firestore/permission-denied'
+            ? 'Sem permissão para acessar os dados.'
+            : 'Não foi possível carregar. Tente novamente.'
+        );
         setLoading(false);
       }
     );
@@ -359,6 +374,10 @@ export default function DetalheListaScreen() {
             </View>
           ))}
         </View>
+      ) : erroCarregamento ? (
+        <FadeInView style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>{erroCarregamento}</Text>
+        </FadeInView>
       ) : itens.length === 0 ? (
         <FadeInView style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
