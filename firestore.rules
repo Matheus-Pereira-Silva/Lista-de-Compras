@@ -15,8 +15,9 @@ service cloud.firestore {
         && request.auth.uid in resource.data.membros;
 
       // Três casos permitidos de update:
-      //  1) Membro mudando qualquer coisa que NÃO seja o array 'membros'
-      //     (ex: renomear a lista).
+      //  1) Membro mudando campos "normais" (ex: renomear a lista) — nunca
+      //     'membros', nunca 'criadoPor'/'criadoEm' (imutáveis pra todo
+      //     mundo), e 'codigoConvite' só se for o dono.
       //  2) Um não-membro entrando: a única mudança é 'membros' virar
       //     exatamente o array antigo + o próprio uid (redemption de convite).
       //  3) Um membro saindo: a única mudança é 'membros' perder
@@ -24,10 +25,16 @@ service cloud.firestore {
       // Isso impede qualquer um (até o dono) de adicionar/remover OUTRO
       // membro diretamente por update — a única porta de entrada é o
       // código de convite, e a única porta de saída é o próprio usuário.
+      // Também impede um membro comum de se autodeclarar dono (criadoPor)
+      // ou de gerar/revogar o convite de outra pessoa (codigoConvite).
       allow update: if request.auth != null && (
         (
           request.auth.uid in resource.data.membros
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['membros'])
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['membros', 'criadoPor', 'criadoEm'])
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['codigoConvite'])
+            || request.auth.uid == resource.data.criadoPor
+          )
         )
         || (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['membros'])
