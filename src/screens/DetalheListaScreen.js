@@ -30,6 +30,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from '@react-native-firebase/firestore';
 
 import { auth, db } from '../services/firebase';
@@ -141,7 +142,7 @@ function ImagemProduto({ uri, style }) {
 // precisa do seu próprio estado local de debounce do indicador de
 // sincronização — hooks só funcionam de forma confiável dentro de um
 // componente de verdade, não numa função de callback qualquer.
-function ItemCard({ item, onAlternarStatus }) {
+function ItemCard({ item, onAlternarStatus, onEditar }) {
   const pendenteDebounced = useDebouncedTrue(!!item.pendenteSincronizacao, 400);
   const comprado = item.status === 'comprado';
 
@@ -155,41 +156,47 @@ function ItemCard({ item, onAlternarStatus }) {
         {comprado && <Text style={styles.checkboxIcon}>✓</Text>}
       </TouchableOpacity>
 
-      {item.icone ? (
-        <View style={styles.itemImagemBox}>
-          <Text style={styles.placeholderIcon}>{item.icone}</Text>
+      <TouchableOpacity
+        style={styles.itemCardConteudo}
+        onPress={() => onEditar(item)}
+        activeOpacity={0.7}
+      >
+        {item.icone ? (
+          <View style={styles.itemImagemBox}>
+            <Text style={styles.placeholderIcon}>{item.icone}</Text>
+          </View>
+        ) : (
+          <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
+        )}
+
+        <View style={styles.itemInfo}>
+          <Text
+            style={[styles.itemNome, comprado && styles.itemTextComprado]}
+            numberOfLines={2}
+          >
+            {item.nome}
+          </Text>
+          <Text style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}>
+            {item.quantidade}
+            {item.categoria ? ` · 🏷️ ${item.categoria}` : ''}
+          </Text>
+          {/* Altura sempre reservada — só a opacidade do texto alterna, pra
+              não fazer o card crescer/encolher quando a sincronização muda. */}
+          <PersistentFade
+            visible={pendenteDebounced}
+            slide={false}
+            style={styles.itemSincronizandoSlot}
+          >
+            <Text style={styles.itemSincronizandoTexto}>🕒 Sincronizando...</Text>
+          </PersistentFade>
         </View>
-      ) : (
-        <ImagemProduto uri={item.imagemUrl} style={styles.itemImagemBox} />
-      )}
 
-      <View style={styles.itemInfo}>
-        <Text
-          style={[styles.itemNome, comprado && styles.itemTextComprado]}
-          numberOfLines={2}
-        >
-          {item.nome}
-        </Text>
-        <Text style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}>
-          {item.quantidade}
-          {item.categoria ? ` · 🏷️ ${item.categoria}` : ''}
-        </Text>
-        {/* Altura sempre reservada — só a opacidade do texto alterna, pra
-            não fazer o card crescer/encolher quando a sincronização muda. */}
-        <PersistentFade
-          visible={pendenteDebounced}
-          slide={false}
-          style={styles.itemSincronizandoSlot}
-        >
-          <Text style={styles.itemSincronizandoTexto}>🕒 Sincronizando...</Text>
-        </PersistentFade>
-      </View>
-
-      {typeof item.preco === 'number' && (
-        <Text style={[styles.itemPreco, comprado && styles.itemTextComprado]}>
-          {formatarPreco(item.preco)}
-        </Text>
-      )}
+        {typeof item.preco === 'number' && (
+          <Text style={[styles.itemPreco, comprado && styles.itemTextComprado]}>
+            {formatarPreco(item.preco)}
+          </Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -209,6 +216,7 @@ export default function DetalheListaScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [etapa, setEtapa] = useState('busca'); // 'busca' | 'formulario'
+  const [itemEditando, setItemEditando] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -218,6 +226,9 @@ export default function DetalheListaScreen() {
   const [unidade, setUnidade] = useState('un');
   const [categoria, setCategoria] = useState('');
   const [precoCentavos, setPrecoCentavos] = useState(null);
+
+  const [renomeioVisible, setRenomeioVisible] = useState(false);
+  const [novoNomeLista, setNovoNomeLista] = useState('');
 
   // Busca local: puramente síncrona (array de 200 produtos), sem debounce
   // nem estado de loading — é instantânea por definição.
@@ -289,6 +300,7 @@ export default function DetalheListaScreen() {
   }, [listaId]);
 
   const ehDono = listaAtual?.criadoPor === auth.currentUser?.uid;
+  const nomeExibido = listaAtual?.nome ?? listaNome;
 
   const totalEstimado = itens
     .filter((item) => item.status !== 'comprado' && typeof item.preco === 'number')
@@ -306,6 +318,7 @@ export default function DetalheListaScreen() {
     setUnidade('un');
     setCategoria('');
     setPrecoCentavos(null);
+    setItemEditando(null);
   };
 
   const abrirModal = () => {
@@ -315,6 +328,22 @@ export default function DetalheListaScreen() {
 
   const fecharModal = () => {
     setModalVisible(false);
+    setItemEditando(null);
+  };
+
+  // Extrai o número da quantidade salva (ex: "2 kg" -> 2, "kg"), pra
+  // preencher o stepper e os chips de unidade na edição.
+  const abrirEdicaoItem = (item) => {
+    const partes = /^(\d+)\s*(.*)$/.exec(item.quantidade || '');
+    setItemEditando(item);
+    setIconeSelecionado(item.icone || null);
+    setNome(item.nome || '');
+    setQuantidadeNumero(partes ? parseInt(partes[1], 10) : 1);
+    setUnidade(partes && partes[2] ? partes[2] : 'un');
+    setCategoria(item.categoria || '');
+    setPrecoCentavos(typeof item.preco === 'number' ? Math.round(item.preco * 100) : null);
+    setEtapa('formulario');
+    setModalVisible(true);
   };
 
   const selecionarProdutoLocal = (produto) => {
@@ -373,8 +402,52 @@ export default function DetalheListaScreen() {
     addDoc(collection(db, 'listas', listaId, 'itens'), novoItem).catch((error) => {
       console.error('Erro ao criar item:', error);
     });
+  };
 
+  const editarItem = () => {
+    const nomeTrim = nome.trim();
+    if (!nomeTrim) return;
+
+    const categoriaTrim = categoria.trim();
+    // deleteField() remove o campo se o usuário limpou um valor que já
+    // existia (diferente da criação, onde o campo simplesmente não é
+    // incluído no documento).
+    const dadosAtualizados = {
+      nome: nomeTrim,
+      quantidade: `${quantidadeNumero} ${unidade}`,
+      categoria: categoriaTrim ? categoriaTrim : deleteField(),
+      preco: precoCentavos != null ? precoCentavos / 100 : deleteField(),
+      icone: iconeSelecionado ? iconeSelecionado : deleteField(),
+    };
+
+    updateDoc(doc(db, 'listas', listaId, 'itens', itemEditando.id), dadosAtualizados).catch(
+      (error) => console.error('Erro ao editar item:', error)
+    );
+  };
+
+  const salvarItem = () => {
+    if (itemEditando) {
+      editarItem();
+    } else {
+      criarItem();
+    }
     fecharModal();
+  };
+
+  const excluirItem = (item) => {
+    Alert.alert('Excluir item', `Remover "${item.nome}" da lista?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: () => {
+          deleteDoc(doc(db, 'listas', listaId, 'itens', item.id)).catch((error) =>
+            console.error('Erro ao excluir item:', error)
+          );
+          fecharModal();
+        },
+      },
+    ]);
   };
 
   const alternarStatus = async (item) => {
@@ -408,7 +481,7 @@ export default function DetalheListaScreen() {
 
     const link = `${URL_BASE_CONVITE}/${codigo}`;
     Share.share({
-      message: `Entre na minha lista "${listaNome}" no Lista de Compras: ${link} (código: ${codigo})`,
+      message: `Entre na minha lista "${nomeExibido}" no Lista de Compras: ${link} (código: ${codigo})`,
     }).catch((error) => console.error('Erro ao abrir compartilhamento:', error));
   };
 
@@ -438,7 +511,7 @@ export default function DetalheListaScreen() {
   };
 
   const sairDaLista = () => {
-    Alert.alert('Sair da lista', `Você vai deixar de ver "${listaNome}".`, [
+    Alert.alert('Sair da lista', `Você vai deixar de ver "${nomeExibido}".`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Sair',
@@ -453,6 +526,63 @@ export default function DetalheListaScreen() {
     ]);
   };
 
+  const abrirRenomearLista = () => {
+    setNovoNomeLista(nomeExibido ?? '');
+    setRenomeioVisible(true);
+  };
+
+  const fecharRenomearLista = () => {
+    setRenomeioVisible(false);
+  };
+
+  const confirmarRenomeio = () => {
+    const nomeTrim = novoNomeLista.trim();
+    if (!nomeTrim) return;
+
+    updateDoc(doc(db, 'listas', listaId), { nome: nomeTrim }).catch((error) =>
+      console.error('Erro ao renomear lista:', error)
+    );
+    fecharRenomearLista();
+  };
+
+  const excluirLista = () => {
+    Alert.alert(
+      'Excluir lista',
+      `Isso vai apagar "${nomeExibido}" e todos os itens dela para todos os membros. Essa ação não pode ser desfeita.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => {
+            // Mesmo padrão fogo-e-esquece: não aguarda o commit do batch,
+            // só sai da tela — o Firestore aplica localmente e sincroniza
+            // quando a conexão voltar.
+            const batch = writeBatch(db);
+            itens.forEach((item) => {
+              batch.delete(doc(db, 'listas', listaId, 'itens', item.id));
+            });
+            if (listaAtual?.codigoConvite) {
+              batch.delete(doc(db, 'convites', listaAtual.codigoConvite));
+            }
+            batch.delete(doc(db, 'listas', listaId));
+            batch.commit().catch((error) => console.error('Erro ao excluir lista:', error));
+            navigation.goBack();
+          },
+        },
+      ]
+    );
+  };
+
+  const abrirMenuLista = () => {
+    const opcoes = [{ text: 'Renomear lista', onPress: abrirRenomearLista }];
+    if (ehDono) {
+      opcoes.push({ text: 'Excluir lista', style: 'destructive', onPress: excluirLista });
+    }
+    opcoes.push({ text: 'Cancelar', style: 'cancel' });
+    Alert.alert('Opções da lista', undefined, opcoes);
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
@@ -464,25 +594,34 @@ export default function DetalheListaScreen() {
           <Text style={styles.backButtonText}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>
-          {listaNome}
+          {nomeExibido}
         </Text>
-        {ehDono ? (
+        <View style={styles.headerActions}>
+          {ehDono ? (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={compartilharLista}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.headerActionIcon}>🔗</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={sairDaLista}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.headerActionIcon}>🚪</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.backButton}
-            onPress={compartilharLista}
+            onPress={abrirMenuLista}
             activeOpacity={0.8}
           >
-            <Text style={styles.headerActionIcon}>🔗</Text>
+            <Text style={styles.headerActionIcon}>⋮</Text>
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={sairDaLista}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.headerActionIcon}>🚪</Text>
-          </TouchableOpacity>
-        )}
+        </View>
       </View>
 
       {erroListaAtual && (
@@ -562,7 +701,7 @@ export default function DetalheListaScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
-              <ItemCard item={item} onAlternarStatus={alternarStatus} />
+              <ItemCard item={item} onAlternarStatus={alternarStatus} onEditar={abrirEdicaoItem} />
             )}
           />
         </FadeInView>
@@ -649,10 +788,17 @@ export default function DetalheListaScreen() {
             ) : (
               <>
                 <View style={styles.formHeader}>
-                  <TouchableOpacity onPress={() => setEtapa('busca')} activeOpacity={0.7}>
-                    <Text style={styles.formBackText}>‹ Buscar</Text>
+                  <TouchableOpacity
+                    onPress={() => (itemEditando ? fecharModal() : setEtapa('busca'))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.formBackText}>
+                      {itemEditando ? 'Cancelar' : '‹ Buscar'}
+                    </Text>
                   </TouchableOpacity>
-                  <Text style={styles.modalTitle}>Novo item</Text>
+                  <Text style={styles.modalTitle}>
+                    {itemEditando ? 'Editar item' : 'Novo item'}
+                  </Text>
                   <View style={styles.formHeaderSpacer} />
                 </View>
 
@@ -734,7 +880,16 @@ export default function DetalheListaScreen() {
                   keyboardType="number-pad"
                 />
 
-                <View style={styles.modalActions}>
+                <View style={[styles.modalActions, itemEditando && styles.modalActionsComExcluir]}>
+                  {itemEditando && (
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.modalButtonDestructive]}
+                      onPress={() => excluirItem(itemEditando)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.modalButtonDestructiveText}>Excluir</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={[styles.modalButton, styles.modalButtonCancel]}
                     onPress={fecharModal}
@@ -744,15 +899,55 @@ export default function DetalheListaScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.modalButtonConfirm]}
-                    onPress={criarItem}
+                    onPress={salvarItem}
                     disabled={!nome.trim()}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.modalButtonConfirmText}>Adicionar</Text>
+                    <Text style={styles.modalButtonConfirmText}>
+                      {itemEditando ? 'Salvar' : 'Adicionar'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={renomeioVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={fecharRenomearLista}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Renomear lista</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Nome da lista"
+              placeholderTextColor="#9B9B9B"
+              value={novoNomeLista}
+              onChangeText={setNovoNomeLista}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={fecharRenomearLista}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={confirmarRenomeio}
+                disabled={!novoNomeLista.trim()}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalButtonConfirmText}>Salvar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -782,6 +977,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: '#1D1D1D',
     lineHeight: 30,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 4,
   },
   headerActionIcon: {
     fontSize: 20,
@@ -912,6 +1111,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  itemCardConteudo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   itemImagemBox: {
     width: 44,
@@ -1151,11 +1355,17 @@ const styles = StyleSheet.create({
   modalButtonFull: {
     alignItems: 'center',
   },
+  modalActionsComExcluir: {
+    justifyContent: 'space-between',
+  },
   modalButtonCancel: {
     backgroundColor: '#F0F0F0',
   },
   modalButtonConfirm: {
     backgroundColor: '#1D9E75',
+  },
+  modalButtonDestructive: {
+    backgroundColor: '#FDECEC',
   },
   modalButtonCancelText: {
     fontSize: 14,
@@ -1166,5 +1376,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  modalButtonDestructiveText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#D14343',
   },
 });
