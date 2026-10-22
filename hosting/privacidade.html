@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidade — Lista de Compras</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+      color: #1D1D1D;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .cartao {
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .titulo {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .subtitulo {
+      font-size: 15px;
+      color: #6B6B6B;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .secao {
+      margin-bottom: 24px;
+    }
+
+    .secao-titulo {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .secao-texto {
+      font-size: 14px;
+      color: #6B6B6B;
+      line-height: 1.6;
+    }
+
+    .lista-dados {
+      font-size: 14px;
+      color: #1D1D1D;
+      line-height: 1.7;
+      padding-left: 18px;
+    }
+
+    .caixa-contato {
+      background: #F0F0F0;
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+
+    .caixa-contato a {
+      color: #1D9E75;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .aviso {
+      font-size: 13px;
+      color: #9B9B9B;
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="cartao">
+    <div class="titulo">Política de Privacidade</div>
+    <div class="subtitulo">
+      Lista de Compras — como seus dados são tratados neste app.
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Quais dados coletamos</div>
+      <div class="secao-texto">
+        <ul class="lista-dados">
+          <li>E-mail e senha, usados só para login (a senha é tratada pelo Firebase Authentication, do Google — nunca passa pelos nossos servidores nem é armazenada por nós em texto puro).</li>
+          <li>As listas de compras que você cria: nome da lista e os membros que participam dela.</li>
+          <li>Os itens dessas listas: nome do produto, quantidade, unidade, categoria e preço (quando informado).</li>
+          <li>Código de convite, quando você compartilha uma lista com outras pessoas.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Onde esses dados ficam</div>
+      <div class="secao-texto">
+        Tudo é armazenado no Firebase (Cloud Firestore e Firebase Authentication),
+        um serviço do Google Cloud. Não mantemos servidores ou bancos de dados
+        próprios.
+      </div>
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Compartilhamento e publicidade</div>
+      <div class="secao-texto">
+        Não vendemos nem compartilhamos seus dados com terceiros para fins de
+        publicidade. Os dados de uma lista só são visíveis para os membros
+        dessa lista — nunca para outras pessoas de fora dela.
+      </div>
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Como excluir seus dados</div>
+      <div class="secao-texto">
+        Você pode excluir sua conta e seus dados a qualquer momento, direto no
+        app: abra "Minhas Listas", toque no ícone ⚙️ e depois em "Excluir
+        minha conta". Se não tiver acesso ao app, veja as instruções em
+        <a href="/excluir-conta.html">excluir-conta.html</a>.
+      </div>
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Contato</div>
+      <div class="caixa-contato">
+        <div class="secao-texto">
+          Dúvidas sobre esta política ou sobre seus dados podem ser enviadas
+          para <a href="mailto:prismastudiodev@gmail.com">prismastudiodev@gmail.com</a>.
+        </div>
+      </div>
+    </div>
+
+    <div class="aviso">
+      Lista de Compras — projeto acadêmico (TCC). Esta política pode ser
+      atualizada; a versão mais recente está sempre disponível nesta página.
+    </div>
+  </div>
+</body>
+</html>

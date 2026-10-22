@@ -10,6 +10,11 @@
   localmente ou com outro keystore teria um SHA-256 diferente — se isso
   acontecer, repita a extração e atualize a lista abaixo.
 
+## Páginas publicadas
+- `convite/index.html` — recebida pelos links de convite (`/convite/{codigo}`).
+- `excluir-conta.html` — instruções para pedir exclusão de conta sem o app (link exigido na ficha da Play Store).
+- `privacidade.html` — política de privacidade (link exigido na ficha da Play Store).
+
 ## `convite/index.html`
 Página servida pra qualquer URL `/convite/{codigo}` (ver rewrite em `firebase.json`). Lê o código direto do caminho da URL, mostra em destaque e oferece "Abrir no app" (link `listacompras://convite/{codigo}`) e "Baixar na Play Store".
 

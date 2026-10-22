@@ -138,11 +138,12 @@ export default function ConfiguracoesScreen() {
         <View style={styles.dangerCard}>
           <Text style={styles.dangerTitle}>Excluir conta</Text>
           <Text style={styles.dangerText}>
-            Isso apaga sua conta e não pode ser desfeito. Listas que só você
-            acessa, e as que você criou e compartilhou, são apagadas por
-            completo (com os itens e o convite). Em listas de outras pessoas
-            das quais você só participa, você é removido, mas elas continuam
-            existindo para os demais membros.
+            Isso apaga sua conta e não pode ser desfeito. É preciso estar
+            conectado à internet para concluir. Todas as listas criadas por
+            você — inclusive as compartilhadas — são apagadas por completo
+            (itens e convite inclusos), para todos os membros. Em listas de
+            outras pessoas das quais você só participa, você é removido, mas
+            elas continuam existindo para os demais membros.
           </Text>
 
           {!mostrarConfirmacao ? (
