@@ -12,6 +12,7 @@ import LoginScreen from '../screens/LoginScreen';
 import MinhasListasScreen from '../screens/MinhasListasScreen';
 import DetalheListaScreen from '../screens/DetalheListaScreen';
 import EntrarListaScreen from '../screens/EntrarListaScreen';
+import ConfiguracoesScreen from '../screens/ConfiguracoesScreen';
 
 const Stack = createStackNavigator();
 export const navigationRef = createNavigationContainerRef();
@@ -106,6 +107,7 @@ export default function AppNavigator() {
         <Stack.Screen name="MinhasListas" component={MinhasListasScreen} />
         <Stack.Screen name="DetalheLista" component={DetalheListaScreen} />
         <Stack.Screen name="EntrarLista" component={EntrarListaScreen} />
+        <Stack.Screen name="Configuracoes" component={ConfiguracoesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
