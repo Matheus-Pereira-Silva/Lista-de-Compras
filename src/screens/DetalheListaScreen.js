@@ -205,6 +205,7 @@ export default function DetalheListaScreen() {
   const [erroCarregamento, setErroCarregamento] = useState(null);
 
   const [listaAtual, setListaAtual] = useState(null);
+  const [erroListaAtual, setErroListaAtual] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [etapa, setEtapa] = useState('busca'); // 'busca' | 'formulario'
@@ -276,9 +277,11 @@ export default function DetalheListaScreen() {
       doc(db, 'listas', listaId),
       (snapshot) => {
         setListaAtual(snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null);
+        setErroListaAtual(null);
       },
       (error) => {
         console.error('Erro ao carregar dados da lista:', error);
+        setErroListaAtual('Não foi possível carregar algumas informações da lista.');
       }
     );
 
@@ -481,6 +484,12 @@ export default function DetalheListaScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {erroListaAtual && (
+        <View style={styles.syncBanner}>
+          <Text style={styles.syncBannerText}>{erroListaAtual}</Text>
+        </View>
+      )}
 
       {ehDono && listaAtual?.codigoConvite && (
         <View style={styles.codigoBanner}>

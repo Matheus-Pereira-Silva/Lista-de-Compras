@@ -53,17 +53,25 @@ function formatarDataCurta(timestamp) {
 // offline pelo cache do Firestore e evita um "0 itens" fixo e falso.
 function ListaCard({ lista, onPress }) {
   const [itens, setItens] = useState(null); // null = ainda sem nenhum snapshot
+  const [erroItens, setErroItens] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'listas', lista.id, 'itens'),
       (snapshot) => {
         setItens(snapshot.docs.map((docSnapshot) => docSnapshot.data()));
+        setErroItens(null);
       },
       (error) => {
         console.error('Erro ao carregar itens da lista', lista.id, error);
-        // Mantém o que já tinha (não reseta pra null) — se nunca carregou,
-        // o placeholder de carregamento continua visível.
+        // Mantém o que já tinha (não reseta pra null) — se já carregou antes,
+        // continua mostrando o último estado bom. Se nunca carregou, o erro
+        // vira mensagem no lugar do skeleton (em vez de ficar preso nele).
+        setErroItens(
+          error.code === 'firestore/permission-denied'
+            ? 'Sem permissão para ver os itens.'
+            : 'Não foi possível carregar os itens.'
+        );
       }
     );
 
@@ -110,7 +118,11 @@ function ListaCard({ lista, onPress }) {
 
       {carregando ? (
         <View style={styles.progressoContainer}>
-          <SkeletonBlock width="70%" height={10} borderRadius={4} />
+          {erroItens ? (
+            <Text style={styles.progressoTexto}>{erroItens}</Text>
+          ) : (
+            <SkeletonBlock width="70%" height={10} borderRadius={4} />
+          )}
         </View>
       ) : (
         <View style={styles.progressoContainer}>
