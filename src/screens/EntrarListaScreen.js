@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import NetInfo from '@react-native-community/netinfo';
 import { arrayUnion, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 
@@ -17,9 +17,18 @@ import { auth, db } from '../services/firebase';
 
 export default function EntrarListaScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const [codigo, setCodigo] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
+
+  // Preenche sozinho quando a tela é aberta por um link de convite
+  // (https://.../convite/{codigo} ou listacompras://convite/{codigo}).
+  useEffect(() => {
+    if (route.params?.codigo) {
+      setCodigo(route.params.codigo.toUpperCase());
+    }
+  }, [route.params?.codigo]);
 
   const entrar = async () => {
     const codigoLimpo = codigo.trim().toUpperCase();

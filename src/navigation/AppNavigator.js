@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 import {
   NavigationContainer,
   createNavigationContainerRef,
@@ -16,10 +16,49 @@ import EntrarListaScreen from '../screens/EntrarListaScreen';
 const Stack = createStackNavigator();
 export const navigationRef = createNavigationContainerRef();
 
+// Reconhece tanto https://.../convite/{codigo} quanto listacompras://convite/{codigo}
+// — as duas URLs têm o mesmo trecho "convite/CODIGO" em comum.
+function extrairCodigoConviteDaUrl(url) {
+  if (!url) return null;
+  const correspondencia = url.match(/convite\/([A-Z0-9]{6})/i);
+  return correspondencia ? correspondencia[1].toUpperCase() : null;
+}
+
 export default function AppNavigator() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState(null);
   const isFirstAuthCallback = useRef(true);
+  const codigoPendenteRef = useRef(null);
+
+  // Só navega pro código pendente quando já estiver logado E a navegação
+  // já tiver montado — senão guarda e tenta de novo depois (ver efeitos
+  // abaixo).
+  const tentarNavegarComCodigoPendente = () => {
+    if (!codigoPendenteRef.current) return;
+    if (!auth.currentUser) return;
+    if (!navigationRef.isReady()) return;
+
+    const codigo = codigoPendenteRef.current;
+    codigoPendenteRef.current = null;
+    navigationRef.navigate('EntrarLista', { codigo });
+  };
+
+  useEffect(() => {
+    const processarUrl = (url) => {
+      const codigo = extrairCodigoConviteDaUrl(url);
+      if (!codigo) return;
+
+      // Guarda sempre — se ainda não estiver logado, fica pendente até
+      // o login completar (ver o efeito abaixo, que observa `user`).
+      codigoPendenteRef.current = codigo;
+      tentarNavegarComCodigoPendente();
+    };
+
+    Linking.getInitialURL().then(processarUrl);
+    const subscription = Linking.addEventListener('url', ({ url }) => processarUrl(url));
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -41,6 +80,13 @@ export default function AppNavigator() {
 
     return unsubscribe;
   }, []);
+
+  // Dispara de novo sempre que a navegação terminar de inicializar ou o
+  // usuário logar — cobre tanto "abriu o link já logado" quanto "abriu o
+  // link deslogado, logou depois".
+  useEffect(() => {
+    tentarNavegarComCodigoPendente();
+  }, [initializing, user]);
 
   if (initializing) {
     return (

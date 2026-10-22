@@ -9,6 +9,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
     },
+    scheme: 'listacompras',
     android: {
       adaptiveIcon: {
         backgroundColor: '#E6F4FE',
@@ -21,6 +22,22 @@ module.exports = {
       // materializada em disco e essa env var aponta pro caminho real.
       // Localmente, cai no arquivo baixado do Firebase Console na raiz.
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
+      // Link de convite com dominio verdadeiro (autoVerify) e o esquema
+      // customizado (listacompras://convite/{codigo}) como fallback.
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [
+            {
+              scheme: 'https',
+              host: 'listacompras-c4c86.web.app',
+              pathPrefix: '/convite',
+            },
+          ],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
     },
     web: {
       favicon: './assets/favicon.png',
