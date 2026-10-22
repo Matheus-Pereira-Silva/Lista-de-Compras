@@ -27,6 +27,119 @@ import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 const QUANTIDADE_CARDS_SKELETON = 4;
 
+const formatarPreco = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
+
+const EMOJIS_LISTA = ['🛒', '🥬', '🍞', '🧴', '🥛', '🍎', '🏠', '🎉', '🥩', '🧃'];
+
+// Índice estável derivado do nome — a mesma lista sempre cai no mesmo
+// emoji, sem precisar salvar nada novo no Firestore.
+function obterEmojiLista(nome) {
+  let soma = 0;
+  for (let i = 0; i < nome.length; i++) {
+    soma += nome.charCodeAt(i);
+  }
+  return EMOJIS_LISTA[soma % EMOJIS_LISTA.length];
+}
+
+function formatarDataCurta(timestamp) {
+  if (!timestamp?.toDate) return null;
+  const data = timestamp.toDate();
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}`;
+}
+
+// Cada card tem seu próprio onSnapshot na subcoleção de itens — funciona
+// offline pelo cache do Firestore e evita um "0 itens" fixo e falso.
+function ListaCard({ lista, onPress }) {
+  const [itens, setItens] = useState(null); // null = ainda sem nenhum snapshot
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'listas', lista.id, 'itens'),
+      (snapshot) => {
+        setItens(snapshot.docs.map((docSnapshot) => docSnapshot.data()));
+      },
+      (error) => {
+        console.error('Erro ao carregar itens da lista', lista.id, error);
+        // Mantém o que já tinha (não reseta pra null) — se nunca carregou,
+        // o placeholder de carregamento continua visível.
+      }
+    );
+
+    return unsubscribe;
+  }, [lista.id]);
+
+  const carregando = itens === null;
+  const totalItens = itens?.length ?? 0;
+  const totalComprados = itens?.filter((item) => item.status === 'comprado').length ?? 0;
+  const itensPendentesComPreco = itens
+    ? itens.filter((item) => item.status !== 'comprado' && typeof item.preco === 'number')
+    : [];
+  const totalEstimado = itensPendentesComPreco.reduce((total, item) => total + item.preco, 0);
+  const temPreco = itensPendentesComPreco.length > 0;
+  const concluida = totalItens > 0 && totalComprados === totalItens;
+  const progresso = totalItens > 0 ? totalComprados / totalItens : 0;
+
+  const emoji = obterEmojiLista(lista.nome);
+  const dataTexto = formatarDataCurta(lista.criadoEm);
+  const quantidadeMembros = lista.membros?.length ?? 0;
+
+  const pendenteDebounced = useDebouncedTrue(!!lista.pendenteSincronizacao, 400);
+
+  return (
+    <TouchableOpacity style={styles.card} onPress={() => onPress(lista)} activeOpacity={0.8}>
+      <View style={styles.cardTopRow}>
+        <View style={styles.cardIconBox}>
+          <Text style={styles.cardIconText}>{emoji}</Text>
+        </View>
+
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {lista.nome}
+          </Text>
+          <Text style={styles.cardData}>{dataTexto ? `criada em ${dataTexto}` : ''}</Text>
+        </View>
+
+        {!carregando && concluida && (
+          <View style={styles.badgeConcluida}>
+            <Text style={styles.badgeConcluidaTexto}>Concluída</Text>
+          </View>
+        )}
+      </View>
+
+      {carregando ? (
+        <View style={styles.progressoContainer}>
+          <SkeletonBlock width="70%" height={10} borderRadius={4} />
+        </View>
+      ) : (
+        <View style={styles.progressoContainer}>
+          <View style={styles.progressoTrilha}>
+            <View style={[styles.progressoPreenchido, { width: `${progresso * 100}%` }]} />
+          </View>
+          <Text style={styles.progressoTexto}>
+            {totalItens === 0 ? 'Lista vazia' : `${totalComprados} de ${totalItens} comprados`}
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.cardFooterRow}>
+        <View style={styles.badgeMembros}>
+          <Text style={styles.badgeMembrosTexto}>👤 {quantidadeMembros}</Text>
+        </View>
+
+        {!carregando && temPreco && (
+          <Text style={styles.cardTotalEstimado}>{formatarPreco(totalEstimado)}</Text>
+        )}
+      </View>
+
+      <PersistentFade visible={pendenteDebounced} slide={false} style={styles.cardSyncSlot}>
+        <Text style={styles.cardSyncTexto}>🕒 Sincronizando...</Text>
+      </PersistentFade>
+    </TouchableOpacity>
+  );
+}
+
 export default function MinhasListasScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -54,6 +167,19 @@ export default function MinhasListasScreen() {
           ...docSnapshot.data(),
           pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
         }));
+
+        // Mais nova primeiro, sem orderBy na query (evita índice composto).
+        // Listas recém-criadas offline ainda não tem criadoEm resolvido
+        // pelo servidor (vem null) — tratamos como as mais recentes.
+        dados.sort((a, b) => {
+          const tempoA = a.criadoEm?.toMillis ? a.criadoEm.toMillis() : null;
+          const tempoB = b.criadoEm?.toMillis ? b.criadoEm.toMillis() : null;
+          if (tempoA == null && tempoB == null) return 0;
+          if (tempoA == null) return -1;
+          if (tempoB == null) return 1;
+          return tempoB - tempoA;
+        });
+
         setListas(dados);
         setErro(null);
         setLoading(false);
@@ -168,16 +294,7 @@ export default function MinhasListasScreen() {
             data={listas}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => abrirLista(item)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.cardTitle}>{item.nome}</Text>
-                <Text style={styles.cardSubtitle}>0 itens</Text>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => <ListaCard lista={item} onPress={abrirLista} />}
           />
         </FadeInView>
       )}
@@ -295,24 +412,112 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: '#F7F7F7',
-    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderRadius: 18,
     paddingVertical: 18,
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingHorizontal: 18,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   skeletonTitulo: {
     marginBottom: 8,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  cardIconText: {
+    fontSize: 22,
+  },
+  cardInfo: {
+    flex: 1,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1D1D1D',
-    marginBottom: 4,
   },
-  cardSubtitle: {
-    fontSize: 14,
+  cardData: {
+    fontSize: 12,
+    color: '#9B9B9B',
+    marginTop: 2,
+    minHeight: 15,
+  },
+  badgeConcluida: {
+    backgroundColor: '#EAF7F1',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  badgeConcluidaTexto: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1D9E75',
+  },
+  progressoContainer: {
+    height: 28,
+    marginTop: 10,
+    justifyContent: 'center',
+  },
+  progressoTrilha: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E5E5',
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  progressoPreenchido: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#1D9E75',
+  },
+  progressoTexto: {
+    fontSize: 12,
     color: '#6B6B6B',
+  },
+  cardFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  badgeMembros: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgeMembrosTexto: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B6B6B',
+  },
+  cardTotalEstimado: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1D1D1D',
+  },
+  cardSyncSlot: {
+    height: 15,
+    marginTop: 6,
+  },
+  cardSyncTexto: {
+    fontSize: 11,
+    color: '#9B9B9B',
   },
   fab: {
     position: 'absolute',
