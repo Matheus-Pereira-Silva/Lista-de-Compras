@@ -1,9 +1,11 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
+  Alert,
   FlatList,
   LayoutAnimation,
   Modal,
   Platform,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -16,12 +18,17 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
+  deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from '@react-native-firebase/firestore';
 
@@ -37,6 +44,19 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabled) {
 
 const formatarPreco = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
 const QUANTIDADE_ITENS_SKELETON = 5;
+
+// Sem 0/O/1/I pra não confundir na hora de digitar o código à mão.
+const CARACTERES_CODIGO_CONVITE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const URL_BASE_CONVITE = 'https://listacompras-c4c86.web.app/convite';
+
+function gerarCodigoConvite() {
+  let codigo = '';
+  for (let i = 0; i < 6; i++) {
+    const indice = Math.floor(Math.random() * CARACTERES_CODIGO_CONVITE.length);
+    codigo += CARACTERES_CODIGO_CONVITE[indice];
+  }
+  return codigo;
+}
 
 // Pendentes primeiro, comprados no fim; dentro de cada grupo, do mais
 // antigo pro mais novo. Itens recém-criados offline ainda não tem
@@ -184,6 +204,8 @@ export default function DetalheListaScreen() {
   const [loading, setLoading] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
 
+  const [listaAtual, setListaAtual] = useState(null);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [etapa, setEtapa] = useState('busca'); // 'busca' | 'formulario'
 
@@ -245,6 +267,25 @@ export default function DetalheListaScreen() {
 
     return unsubscribe;
   }, [listaId]);
+
+  // Dados do documento da própria lista (membros, criadoPor, codigoConvite)
+  // — necessários pra saber se o usuário é o dono e pra mostrar/reaproveitar
+  // o código de convite.
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      doc(db, 'listas', listaId),
+      (snapshot) => {
+        setListaAtual(snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null);
+      },
+      (error) => {
+        console.error('Erro ao carregar dados da lista:', error);
+      }
+    );
+
+    return unsubscribe;
+  }, [listaId]);
+
+  const ehDono = listaAtual?.criadoPor === auth.currentUser?.uid;
 
   const totalEstimado = itens
     .filter((item) => item.status !== 'comprado' && typeof item.preco === 'number')
@@ -344,6 +385,71 @@ export default function DetalheListaScreen() {
     }
   };
 
+  const compartilharLista = () => {
+    let codigo = listaAtual?.codigoConvite;
+
+    if (!codigo) {
+      codigo = gerarCodigoConvite();
+      // Fogo e esquece, igual as outras escritas: o código já é usado no
+      // Share abaixo sem esperar a confirmação do servidor.
+      setDoc(doc(db, 'convites', codigo), {
+        listaId,
+        criadoPor: auth.currentUser.uid,
+        criadoEm: serverTimestamp(),
+      }).catch((error) => console.error('Erro ao criar convite:', error));
+
+      updateDoc(doc(db, 'listas', listaId), { codigoConvite: codigo }).catch((error) =>
+        console.error('Erro ao salvar código de convite na lista:', error)
+      );
+    }
+
+    const link = `${URL_BASE_CONVITE}/${codigo}`;
+    Share.share({
+      message: `Entre na minha lista "${listaNome}" no Lista de Compras: ${link} (código: ${codigo})`,
+    }).catch((error) => console.error('Erro ao abrir compartilhamento:', error));
+  };
+
+  const revogarConvite = () => {
+    const codigo = listaAtual?.codigoConvite;
+    if (!codigo) return;
+
+    Alert.alert(
+      'Revogar convite',
+      'O código atual deixará de funcionar. Você pode gerar um novo depois.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Revogar',
+          style: 'destructive',
+          onPress: () => {
+            deleteDoc(doc(db, 'convites', codigo)).catch((error) =>
+              console.error('Erro ao revogar convite:', error)
+            );
+            updateDoc(doc(db, 'listas', listaId), { codigoConvite: deleteField() }).catch(
+              (error) => console.error('Erro ao limpar código de convite:', error)
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const sairDaLista = () => {
+    Alert.alert('Sair da lista', `Você vai deixar de ver "${listaNome}".`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: () => {
+          updateDoc(doc(db, 'listas', listaId), {
+            membros: arrayRemove(auth.currentUser.uid),
+          }).catch((error) => console.error('Erro ao sair da lista:', error));
+          navigation.goBack();
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
@@ -357,8 +463,35 @@ export default function DetalheListaScreen() {
         <Text style={styles.title} numberOfLines={1}>
           {listaNome}
         </Text>
-        <View style={styles.backButton} />
+        {ehDono ? (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={compartilharLista}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.headerActionIcon}>🔗</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={sairDaLista}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.headerActionIcon}>🚪</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {ehDono && listaAtual?.codigoConvite && (
+        <View style={styles.codigoBanner}>
+          <Text style={styles.codigoBannerTexto}>
+            Código de convite: <Text style={styles.codigoBannerCodigo}>{listaAtual.codigoConvite}</Text>
+          </Text>
+          <TouchableOpacity onPress={revogarConvite} activeOpacity={0.7}>
+            <Text style={styles.codigoBannerRevogar}>Revogar</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <PersistentFade visible={temItensPendentesDebounced} style={styles.syncBanner}>
         <Text style={styles.syncBannerText}>
@@ -641,12 +774,41 @@ const styles = StyleSheet.create({
     color: '#1D1D1D',
     lineHeight: 30,
   },
+  headerActionIcon: {
+    fontSize: 20,
+  },
   title: {
     flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1D1D1D',
     textAlign: 'center',
+  },
+  codigoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 24,
+    marginBottom: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: '#EAF7F1',
+  },
+  codigoBannerTexto: {
+    fontSize: 13,
+    color: '#1D1D1D',
+  },
+  codigoBannerCodigo: {
+    fontWeight: 'bold',
+    color: '#1D9E75',
+    letterSpacing: 1,
+  },
+  codigoBannerRevogar: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#D14343',
+    marginLeft: 12,
   },
   syncBanner: {
     flexDirection: 'row',

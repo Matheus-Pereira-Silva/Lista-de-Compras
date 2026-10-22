@@ -11,6 +11,7 @@ import { auth } from '../services/firebase';
 import LoginScreen from '../screens/LoginScreen';
 import MinhasListasScreen from '../screens/MinhasListasScreen';
 import DetalheListaScreen from '../screens/DetalheListaScreen';
+import EntrarListaScreen from '../screens/EntrarListaScreen';
 
 const Stack = createStackNavigator();
 export const navigationRef = createNavigationContainerRef();
@@ -58,6 +59,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="MinhasListas" component={MinhasListasScreen} />
         <Stack.Screen name="DetalheLista" component={DetalheListaScreen} />
+        <Stack.Screen name="EntrarLista" component={EntrarListaScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

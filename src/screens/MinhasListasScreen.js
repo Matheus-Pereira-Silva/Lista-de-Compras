@@ -300,6 +300,14 @@ export default function MinhasListasScreen() {
       )}
 
       <TouchableOpacity
+        style={[styles.fabSecundario, { bottom: 28 + insets.bottom }]}
+        onPress={() => navigation.navigate('EntrarLista')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.fabSecundarioIcon}>🔑</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
         onPress={abrirModal}
         activeOpacity={0.8}
@@ -538,6 +546,26 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: '#fff',
     lineHeight: 34,
+  },
+  fabSecundario: {
+    position: 'absolute',
+    right: 92,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  fabSecundarioIcon: {
+    fontSize: 20,
   },
   modalOverlay: {
     flex: 1,
