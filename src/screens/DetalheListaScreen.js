@@ -1,11 +1,14 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
   FlatList,
+  LayoutAnimation,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
@@ -28,8 +31,31 @@ import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabled) {
+  UIManager.setLayoutAnimationEnabled(true);
+}
+
 const formatarPreco = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
 const QUANTIDADE_ITENS_SKELETON = 5;
+
+// Pendentes primeiro, comprados no fim; dentro de cada grupo, do mais
+// antigo pro mais novo. Itens recém-criados offline ainda não tem
+// criadoEm resolvido pelo servidor (vem null) — tratamos como o mais
+// recente do grupo, então vão pro fim dele.
+function ordenarItens(itens) {
+  return [...itens].sort((a, b) => {
+    const aComprado = a.status === 'comprado' ? 1 : 0;
+    const bComprado = b.status === 'comprado' ? 1 : 0;
+    if (aComprado !== bComprado) return aComprado - bComprado;
+
+    const tempoA = a.criadoEm?.toMillis ? a.criadoEm.toMillis() : null;
+    const tempoB = b.criadoEm?.toMillis ? b.criadoEm.toMillis() : null;
+    if (tempoA == null && tempoB == null) return 0;
+    if (tempoA == null) return 1;
+    if (tempoB == null) return -1;
+    return tempoA - tempoB;
+  });
+}
 
 const UNIDADES = [
   { valor: 'un', icone: '📦' },
@@ -195,7 +221,10 @@ export default function DetalheListaScreen() {
           // servidor.
           pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
         }));
-        setItens(dados);
+        // Anima a transição (ex: item mudando de grupo ao marcar/desmarcar)
+        // em vez de só saltar pra nova posição.
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setItens(ordenarItens(dados));
         setErroCarregamento(null);
         setLoading(false);
       },
