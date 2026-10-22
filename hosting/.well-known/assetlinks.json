@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.prismastudio.listacompras",
+      "sha256_cert_fingerprints": [
+        "03:4A:B4:19:CE:8E:58:59:85:C0:C4:9A:6D:3B:0A:D1:2D:F3:E6:E0:92:9B:FC:B3:54:24:7E:14:F0:36:D0:EF"
+      ]
+    }
+  }
+]

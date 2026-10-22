@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Convite — Lista de Compras</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+      color: #1D1D1D;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .cartao {
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .titulo {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .subtitulo {
+      font-size: 15px;
+      color: #6B6B6B;
+      margin-bottom: 28px;
+      line-height: 1.4;
+    }
+
+    .codigo-caixa {
+      background: #EAF7F1;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+
+    .codigo-rotulo {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1D9E75;
+      margin-bottom: 6px;
+    }
+
+    .codigo-valor {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 6px;
+      color: #1D1D1D;
+    }
+
+    .botao {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 12px;
+    }
+
+    .botao-primario {
+      background: #1D9E75;
+      color: #fff;
+    }
+
+    .botao-secundario {
+      background: #F0F0F0;
+      color: #6B6B6B;
+    }
+
+    .aviso {
+      font-size: 13px;
+      color: #9B9B9B;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="cartao">
+    <div class="titulo">Você foi convidado!</div>
+    <div class="subtitulo">Entre nessa lista de compras compartilhada no app Lista de Compras.</div>
+
+    <div class="codigo-caixa">
+      <div class="codigo-rotulo">CÓDIGO DE CONVITE</div>
+      <div class="codigo-valor" id="codigo">------</div>
+    </div>
+
+    <a class="botao botao-primario" id="botao-abrir-app" href="#">Abrir no app</a>
+    <a class="botao botao-secundario" id="botao-play-store" href="#">Baixar na Play Store</a>
+
+    <div class="aviso">Se já tiver o app instalado, "Abrir no app" leva direto pra tela de entrar com o código.</div>
+  </div>
+
+  <script>
+    // PREENCHER DEPOIS DA PUBLICAÇÃO na Play Store (ver README.md desta pasta).
+    var LINK_PLAY_STORE = '#';
+
+    var partes = window.location.pathname.split('/').filter(Boolean);
+    var codigo = (partes[partes.length - 1] || '').toUpperCase();
+
+    document.getElementById('codigo').textContent = codigo || '------';
+    document.getElementById('botao-abrir-app').href = 'listacompras://convite/' + codigo;
+    document.getElementById('botao-play-store').href = LINK_PLAY_STORE;
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "public": "hosting",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "!**/.well-known/**",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/convite/**",
+        "destination": "/convite/index.html"
+      }
+    ]
+  }
+}
