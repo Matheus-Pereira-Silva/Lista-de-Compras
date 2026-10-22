@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import OfflineBanner from './src/components/OfflineBanner';
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
       <ErrorBoundary>
         <AppNavigator />
       </ErrorBoundary>
+      <OfflineBanner />
       <StatusBar style="auto" />
     </SafeAreaProvider>
   );
