@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Alert,
   FlatList,
@@ -59,14 +59,23 @@ function gerarCodigoConvite() {
   return codigo;
 }
 
+// Enquanto o id está no conjunto de "em transição" (ver alternarStatus),
+// a ordenação ignora o status novo e trata o item como se ainda
+// estivesse no grupo anterior — é isso que atrasa a troca de grupo sem
+// atrasar a escrita no Firestore nem o riscado/desmarcado do item.
+function statusEfetivo(item, idsTransicionando) {
+  if (!idsTransicionando.has(item.id)) return item.status;
+  return item.status === 'comprado' ? 'pendente' : 'comprado';
+}
+
 // Pendentes primeiro, comprados no fim; dentro de cada grupo, do mais
 // antigo pro mais novo. Itens recém-criados offline ainda não tem
 // criadoEm resolvido pelo servidor (vem null) — tratamos como o mais
 // recente do grupo, então vão pro fim dele.
-function ordenarItens(itens) {
+function ordenarItens(itens, idsTransicionando) {
   return [...itens].sort((a, b) => {
-    const aComprado = a.status === 'comprado' ? 1 : 0;
-    const bComprado = b.status === 'comprado' ? 1 : 0;
+    const aComprado = statusEfetivo(a, idsTransicionando) === 'comprado' ? 1 : 0;
+    const bComprado = statusEfetivo(b, idsTransicionando) === 'comprado' ? 1 : 0;
     if (aComprado !== bComprado) return aComprado - bComprado;
 
     const tempoA = a.criadoEm?.toMillis ? a.criadoEm.toMillis() : null;
@@ -230,6 +239,20 @@ export default function DetalheListaScreen() {
   const [renomeioVisible, setRenomeioVisible] = useState(false);
   const [novoNomeLista, setNovoNomeLista] = useState('');
 
+  // Ids de itens que acabaram de ser marcados/desmarcados e ainda não
+  // devem mudar de grupo na lista (ver alternarStatus). timersRef guarda
+  // o timeout de cada um, pra poder cancelar se o usuário tocar de novo.
+  const [idsTransicionando, setIdsTransicionando] = useState(() => new Set());
+  const timersRef = useRef(new Map());
+  const [mostrarComprados, setMostrarComprados] = useState(true);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      timersRef.current.clear();
+    };
+  }, []);
+
   // Busca local: puramente síncrona (array de 200 produtos), sem debounce
   // nem estado de loading — é instantânea por definição.
   const resultadosLocais = useMemo(
@@ -255,10 +278,12 @@ export default function DetalheListaScreen() {
           // servidor.
           pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
         }));
-        // Anima a transição (ex: item mudando de grupo ao marcar/desmarcar)
-        // em vez de só saltar pra nova posição.
+        // A ordenação (com o atraso de grupo) é recalculada depois, num
+        // useMemo que também depende de idsTransicionando — aqui só guarda
+        // os dados crus. A animação de reordenar por causa do timer fica
+        // a cargo do próprio timer, não daqui.
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setItens(ordenarItens(dados));
+        setItens(dados);
         setErroCarregamento(null);
         setLoading(false);
       },
@@ -302,12 +327,51 @@ export default function DetalheListaScreen() {
   const ehDono = listaAtual?.criadoPor === auth.currentUser?.uid;
   const nomeExibido = listaAtual?.nome ?? listaNome;
 
+  // Baseado no status real (sem o atraso da transição) — o total some um
+  // item da conta na hora que ele é marcado, mesmo antes de ele subir de
+  // grupo visualmente.
   const totalEstimado = itens
     .filter((item) => item.status !== 'comprado' && typeof item.preco === 'number')
     .reduce((total, item) => total + item.preco, 0);
 
   const temItensPendentes = itens.some((item) => item.pendenteSincronizacao);
   const temItensPendentesDebounced = useDebouncedTrue(temItensPendentes, 400);
+
+  const itensOrdenados = useMemo(
+    () => ordenarItens(itens, idsTransicionando),
+    [itens, idsTransicionando]
+  );
+
+  const totalComprados = itensOrdenados.filter(
+    (item) => statusEfetivo(item, idsTransicionando) === 'comprado'
+  ).length;
+
+  // Insere o cabeçalho "Comprados (N)" antes do primeiro item do grupo, e
+  // some com os itens do grupo (mas não com o cabeçalho) quando recolhido.
+  const linhasLista = useMemo(() => {
+    const linhas = [];
+    let cabecalhoInserido = false;
+
+    itensOrdenados.forEach((item) => {
+      const comprado = statusEfetivo(item, idsTransicionando) === 'comprado';
+
+      if (comprado && !cabecalhoInserido) {
+        linhas.push({ id: '__cabecalhoComprados', __tipo: 'cabecalhoComprados' });
+        cabecalhoInserido = true;
+      }
+
+      if (comprado && !mostrarComprados) return;
+
+      linhas.push(item);
+    });
+
+    return linhas;
+  }, [itensOrdenados, idsTransicionando, mostrarComprados]);
+
+  const alternarMostrarComprados = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setMostrarComprados((atual) => !atual);
+  };
 
   const resetarFormulario = () => {
     setEtapa('busca');
@@ -450,8 +514,39 @@ export default function DetalheListaScreen() {
     ]);
   };
 
+  const ATRASO_TROCA_DE_GRUPO = 1200;
+
   const alternarStatus = async (item) => {
     const novoStatus = item.status === 'comprado' ? 'pendente' : 'comprado';
+
+    if (timersRef.current.has(item.id)) {
+      // Segundo toque antes do timer da transição anterior terminar: o
+      // item já está de volta ao status original, então não há troca de
+      // grupo pendente — só cancela o timer, sem reordenar nada.
+      clearTimeout(timersRef.current.get(item.id));
+      timersRef.current.delete(item.id);
+      setIdsTransicionando((atual) => {
+        const novo = new Set(atual);
+        novo.delete(item.id);
+        return novo;
+      });
+    } else {
+      setIdsTransicionando((atual) => new Set(atual).add(item.id));
+      const timeoutId = setTimeout(() => {
+        timersRef.current.delete(item.id);
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIdsTransicionando((atual) => {
+          const novo = new Set(atual);
+          novo.delete(item.id);
+          return novo;
+        });
+      }, ATRASO_TROCA_DE_GRUPO);
+      timersRef.current.set(item.id, timeoutId);
+    }
+
+    // Grava na hora, como as outras escritas — o riscado/desmarcado do
+    // item já reflete isso imediatamente via onSnapshot; só a posição na
+    // lista é que fica atrasada (ver statusEfetivo/ordenarItens acima).
     try {
       await updateDoc(doc(db, 'listas', listaId, 'itens', item.id), {
         status: novoStatus,
@@ -697,12 +792,24 @@ export default function DetalheListaScreen() {
       ) : (
         <FadeInView style={styles.listaContainer}>
           <FlatList
-            data={itens}
+            data={linhasLista}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <ItemCard item={item} onAlternarStatus={alternarStatus} onEditar={abrirEdicaoItem} />
-            )}
+            renderItem={({ item }) =>
+              item.__tipo === 'cabecalhoComprados' ? (
+                <TouchableOpacity
+                  onPress={alternarMostrarComprados}
+                  activeOpacity={0.7}
+                  style={styles.cabecalhoComprados}
+                >
+                  <Text style={styles.cabecalhoCompradosTexto}>
+                    {mostrarComprados ? '▾' : '▸'} Comprados ({totalComprados})
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <ItemCard item={item} onAlternarStatus={alternarStatus} onEditar={abrirEdicaoItem} />
+              )
+            }
           />
         </FadeInView>
       )}
@@ -1079,6 +1186,15 @@ const styles = StyleSheet.create({
   },
   skeletonNome: {
     marginBottom: 6,
+  },
+  cabecalhoComprados: {
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  cabecalhoCompradosTexto: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9B9B9B',
   },
   itemCard: {
     flexDirection: 'row',
