@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -47,6 +49,8 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [infoMessage, setInfoMessage] = useState(null);
   const [recuperandoSenha, setRecuperandoSenha] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const senhaInputRef = useRef(null);
 
   const handleSubmit = async () => {
     setErrorMessage(null);
@@ -111,6 +115,11 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logo}
+          accessibilityLabel="Lista de Compras"
+        />
         <Text style={styles.title}>Lista de Compras</Text>
         <Text style={styles.subtitle}>Organize suas compras de forma simples</Text>
 
@@ -130,7 +139,6 @@ export default function LoginScreen() {
         </View>
 
         <TextInput
-
           keyboardAppearance="light"
           style={styles.input}
           placeholder="E-mail"
@@ -140,18 +148,37 @@ export default function LoginScreen() {
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
+          returnKeyType="next"
+          onSubmitEditing={() => senhaInputRef.current?.focus()}
+          blurOnSubmit={false}
         />
 
-        <TextInput
-
-          keyboardAppearance="light"
-          style={styles.input}
-          placeholder="Senha"
-          placeholderTextColor={theme.colors.textPlaceholder}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordRow}>
+          <TextInput
+            ref={senhaInputRef}
+            keyboardAppearance="light"
+            style={styles.passwordInput}
+            placeholder="Senha"
+            placeholderTextColor={theme.colors.textPlaceholder}
+            secureTextEntry={!mostrarSenha}
+            value={password}
+            onChangeText={setPassword}
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+          <TouchableOpacity
+            style={styles.passwordToggle}
+            onPress={() => setMostrarSenha((atual) => !atual)}
+            activeOpacity={0.7}
+            accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+          >
+            <Ionicons
+              name={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
 
         {!isSignUp && (
           <TouchableOpacity
@@ -195,6 +222,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.xl,
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.lg,
+    marginBottom: theme.spacing.lg,
   },
   title: {
     ...theme.typography.title,
@@ -244,6 +277,29 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.lg,
   },
+  passwordRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    marginBottom: theme.spacing.lg,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: theme.colors.textPrimary,
+  },
+  passwordToggle: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.xs,
+  },
   forgotPasswordLink: {
     alignSelf: 'flex-end',
     marginBottom: theme.spacing.lg,
@@ -254,15 +310,15 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: theme.colors.error,
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: theme.spacing.lg,
-    textAlign: 'center',
+    alignSelf: 'flex-start',
   },
   infoText: {
     color: theme.colors.primary,
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: theme.spacing.lg,
-    textAlign: 'center',
+    alignSelf: 'flex-start',
   },
   button: {
     backgroundColor: theme.colors.primary,
