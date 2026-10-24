@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -105,74 +105,76 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Text style={styles.title}>Lista de Compras</Text>
-      <Text style={styles.subtitle}>Organize suas compras de forma simples</Text>
-
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, !isSignUp && styles.tabActive]}
-          onPress={() => !isSignUp || toggleMode()}
-        >
-          <Text style={[styles.tabText, !isSignUp && styles.tabTextActive]}>Entrar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, isSignUp && styles.tabActive]}
-          onPress={() => isSignUp || toggleMode()}
-        >
-          <Text style={[styles.tabText, isSignUp && styles.tabTextActive]}>Criar conta</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TextInput
-        style={styles.input}
-        placeholder="E-mail"
-        placeholderTextColor="#9B9B9B"
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
-        placeholderTextColor="#9B9B9B"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      {!isSignUp && (
-        <TouchableOpacity
-          style={styles.forgotPasswordLink}
-          onPress={handleForgotPassword}
-          disabled={recuperandoSenha}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
-        </TouchableOpacity>
-      )}
-
-      {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
-      {infoMessage && <Text style={styles.infoText}>{infoMessage}</Text>}
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleSubmit}
-        disabled={loading || !email || !password}
-        activeOpacity={0.8}
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>{isSignUp ? 'Criar conta' : 'Entrar'}</Text>
+        <Text style={styles.title}>Lista de Compras</Text>
+        <Text style={styles.subtitle}>Organize suas compras de forma simples</Text>
+
+        <View style={styles.tabs}>
+          <TouchableOpacity
+            style={[styles.tab, !isSignUp && styles.tabActive]}
+            onPress={() => !isSignUp || toggleMode()}
+          >
+            <Text style={[styles.tabText, !isSignUp && styles.tabTextActive]}>Entrar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, isSignUp && styles.tabActive]}
+            onPress={() => isSignUp || toggleMode()}
+          >
+            <Text style={[styles.tabText, isSignUp && styles.tabTextActive]}>Criar conta</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TextInput
+          style={styles.input}
+          placeholder="E-mail"
+          placeholderTextColor="#9B9B9B"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Senha"
+          placeholderTextColor="#9B9B9B"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        {!isSignUp && (
+          <TouchableOpacity
+            style={styles.forgotPasswordLink}
+            onPress={handleForgotPassword}
+            disabled={recuperandoSenha}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
+          </TouchableOpacity>
         )}
-      </TouchableOpacity>
+
+        {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+        {infoMessage && <Text style={styles.infoText}>{infoMessage}</Text>}
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSubmit}
+          disabled={loading || !email || !password}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>{isSignUp ? 'Criar conta' : 'Entrar'}</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -181,9 +183,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+    paddingVertical: 24,
   },
   title: {
     fontSize: 28,

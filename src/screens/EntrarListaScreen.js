@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -76,10 +76,7 @@ export default function EntrarListaScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -88,36 +85,41 @@ export default function EntrarListaScreen() {
         <Text style={styles.backButtonText}>‹</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Entrar em uma lista</Text>
-      <Text style={styles.subtitle}>
-        Digite o código de 6 letras/números que quem compartilhou te enviou.
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="CÓDIGO"
-        placeholderTextColor="#9B9B9B"
-        value={codigo}
-        onChangeText={(texto) => setCodigo(texto.toUpperCase())}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        maxLength={6}
-      />
-
-      {erro && <Text style={styles.errorText}>{erro}</Text>}
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={entrar}
-        disabled={carregando || !codigo.trim()}
-        activeOpacity={0.8}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
-        {carregando ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Entrar</Text>
-        )}
-      </TouchableOpacity>
+        <Text style={styles.title}>Entrar em uma lista</Text>
+        <Text style={styles.subtitle}>
+          Digite o código de 6 letras/números que quem compartilhou te enviou.
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="CÓDIGO"
+          placeholderTextColor="#9B9B9B"
+          value={codigo}
+          onChangeText={(texto) => setCodigo(texto.toUpperCase())}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          maxLength={6}
+        />
+
+        {erro && <Text style={styles.errorText}>{erro}</Text>}
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={entrar}
+          disabled={carregando || !codigo.trim()}
+          activeOpacity={0.8}
+        >
+          {carregando ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Entrar</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -126,9 +128,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+    paddingVertical: 24,
   },
   backButton: {
     position: 'absolute',

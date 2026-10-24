@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -342,36 +344,41 @@ export default function MinhasListasScreen() {
         animationType="fade"
         onRequestClose={fecharModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Nova lista</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Nome da lista"
-              placeholderTextColor="#9B9B9B"
-              value={novaListaNome}
-              onChangeText={setNovaListaNome}
-              autoFocus
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={fecharModal}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
-                onPress={criarLista}
-                disabled={!novaListaNome.trim()}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalButtonConfirmText}>Criar</Text>
-              </TouchableOpacity>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
+          <ScrollView
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Nova lista</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Nome da lista"
+                placeholderTextColor="#9B9B9B"
+                value={novaListaNome}
+                onChangeText={setNovaListaNome}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={fecharModal}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonConfirm]}
+                  onPress={criarLista}
+                  disabled={!novaListaNome.trim()}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonConfirmText}>Criar</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -605,7 +612,9 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    alignItems: 'center',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },

@@ -2,9 +2,11 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   LayoutAnimation,
   Modal,
   Platform,
+  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -828,7 +830,7 @@ export default function DetalheListaScreen() {
         animationType="fade"
         onRequestClose={fecharModal}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalContent}>
             {etapa === 'busca' ? (
               <>
@@ -893,7 +895,7 @@ export default function DetalheListaScreen() {
                 </TouchableOpacity>
               </>
             ) : (
-              <>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={styles.formHeader}>
                   <TouchableOpacity
                     onPress={() => (itemEditando ? fecharModal() : setEtapa('busca'))}
@@ -1015,10 +1017,10 @@ export default function DetalheListaScreen() {
                     </Text>
                   </TouchableOpacity>
                 </View>
-              </>
+              </ScrollView>
             )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal
@@ -1027,36 +1029,38 @@ export default function DetalheListaScreen() {
         animationType="fade"
         onRequestClose={fecharRenomearLista}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior="padding">
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Renomear lista</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Nome da lista"
-              placeholderTextColor="#9B9B9B"
-              value={novoNomeLista}
-              onChangeText={setNovoNomeLista}
-              autoFocus
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={fecharRenomearLista}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
-                onPress={confirmarRenomeio}
-                disabled={!novoNomeLista.trim()}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalButtonConfirmText}>Salvar</Text>
-              </TouchableOpacity>
-            </View>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalTitle}>Renomear lista</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Nome da lista"
+                placeholderTextColor="#9B9B9B"
+                value={novoNomeLista}
+                onChangeText={setNovoNomeLista}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={fecharRenomearLista}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonConfirm]}
+                  onPress={confirmarRenomeio}
+                  disabled={!novoNomeLista.trim()}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonConfirmText}>Salvar</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
