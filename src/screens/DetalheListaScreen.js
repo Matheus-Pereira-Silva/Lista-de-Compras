@@ -36,6 +36,7 @@ import {
 } from '@react-native-firebase/firestore';
 
 import { auth, db } from '../services/firebase';
+import { useOffline } from '../hooks/useOffline';
 import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
@@ -217,6 +218,9 @@ export default function DetalheListaScreen() {
   const route = useRoute();
   const { listaId, listaNome } = route.params || {};
   const insets = useSafeAreaInsets();
+  // Enquanto a faixa global de offline está montada, ela já soma
+  // insets.top (ver AppNavigator) — não soma de novo aqui.
+  const offline = useOffline();
 
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -682,7 +686,7 @@ export default function DetalheListaScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: (offline ? 0 : insets.top) + 16 }]}>
         <View style={styles.headerTopRow}>
           <TouchableOpacity
             style={styles.backButton}

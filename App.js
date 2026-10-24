@@ -3,15 +3,16 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
-import OfflineBanner from './src/components/OfflineBanner';
+import { OfflineProvider } from './src/hooks/useOffline';
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <AppNavigator />
-      </ErrorBoundary>
-      <OfflineBanner />
+      <OfflineProvider>
+        <ErrorBoundary>
+          <AppNavigator />
+        </ErrorBoundary>
+      </OfflineProvider>
       <StatusBar style="auto" />
     </SafeAreaProvider>
   );

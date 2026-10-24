@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
+import { useOffline } from '../hooks/useOffline';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
@@ -172,6 +173,9 @@ function ListaCard({ lista, onPress }) {
 export default function MinhasListasScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  // Enquanto a faixa global de offline está montada, ela já soma
+  // insets.top (ver AppNavigator) — não soma de novo aqui.
+  const offline = useOffline();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -276,7 +280,7 @@ export default function MinhasListasScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: (offline ? 0 : insets.top) + 16 }]}>
         <Text style={styles.title}>Minhas Listas</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity

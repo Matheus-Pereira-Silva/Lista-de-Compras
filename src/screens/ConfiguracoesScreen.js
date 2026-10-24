@@ -29,10 +29,14 @@ import {
 } from '@react-native-firebase/firestore';
 
 import { auth, db } from '../services/firebase';
+import { useOffline } from '../hooks/useOffline';
 
 export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  // Enquanto a faixa global de offline está montada, ela já soma
+  // insets.top (ver AppNavigator) — não soma de novo aqui.
+  const offline = useOffline();
 
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const [senha, setSenha] = useState('');
@@ -116,7 +120,7 @@ export default function ConfiguracoesScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: (offline ? 0 : insets.top) + 16 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
