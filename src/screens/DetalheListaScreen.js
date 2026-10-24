@@ -683,42 +683,55 @@ export default function DetalheListaScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.backButtonText}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>
-          {nomeExibido}
-        </Text>
-        <View style={styles.headerActions}>
-          {ehDono ? (
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={compartilharLista}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.headerActionIcon}>🔗</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={sairDaLista}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.headerActionIcon}>🚪</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.headerTopRow}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={abrirMenuLista}
+            onPress={() => navigation.goBack()}
             activeOpacity={0.8}
           >
-            <Text style={styles.headerActionIcon}>⋮</Text>
+            <Text style={styles.backButtonText}>‹</Text>
           </TouchableOpacity>
+          <Text style={styles.title} numberOfLines={1}>
+            {nomeExibido}
+          </Text>
+          <View style={styles.headerActions}>
+            {ehDono ? (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={compartilharLista}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.headerActionIcon}>🔗</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={sairDaLista}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.headerActionIcon}>🚪</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={abrirMenuLista}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.headerActionIcon}>⋮</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Linha fina, sem pill — só alterna opacidade (altura sempre a
+            mesma), pra não deixar buraco no espaçamento quando não há
+            pendência nem gerar salto quando aparece. */}
+        <PersistentFade
+          visible={temItensPendentesDebounced}
+          slide={false}
+          style={styles.headerSyncLinha}
+        >
+          <Text style={styles.headerSyncTexto}>☁️ Alterações pendentes de sincronização</Text>
+        </PersistentFade>
       </View>
 
       {erroListaAtual && (
@@ -737,12 +750,6 @@ export default function DetalheListaScreen() {
           </TouchableOpacity>
         </View>
       )}
-
-      <PersistentFade visible={temItensPendentesDebounced} style={styles.syncBanner}>
-        <Text style={styles.syncBannerText}>
-          ☁️ Alterações pendentes de sincronização
-        </Text>
-      </PersistentFade>
 
       <View style={styles.totalContainer}>
         <Text style={styles.totalLabel}>Total estimado (pendentes)</Text>
@@ -1072,11 +1079,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 20,
+  },
+  // Altura pequena e fixa — só a opacidade alterna, nunca o espaço
+  // ocupado, pra não deixar buraco quando não há pendência.
+  headerSyncLinha: {
+    height: 16,
+    marginTop: 2,
+    paddingHorizontal: 4,
+  },
+  headerSyncTexto: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9B9B9B',
   },
   backButton: {
     width: 36,
@@ -1180,7 +1201,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 24,
-    paddingBottom: 100,
+    paddingBottom: 110,
   },
   skeletonCheckbox: {
     marginRight: 14,
