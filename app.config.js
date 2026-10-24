@@ -1,6 +1,6 @@
 module.exports = {
   expo: {
-    name: 'ListaCompras',
+    name: 'Lista de Compras',
     slug: 'ListaCompras',
     version: '1.0.0',
     orientation: 'portrait',
@@ -16,7 +16,7 @@ module.exports = {
       // forcar o tema claro, inclusive em dialogos e teclado nativos.
       userInterfaceStyle: 'light',
       adaptiveIcon: {
-        backgroundColor: '#E6F4FE',
+        backgroundColor: '#1D9E75',
         foregroundImage: './assets/android-icon-foreground.png',
         backgroundImage: './assets/android-icon-background.png',
         monochromeImage: './assets/android-icon-monochrome.png',
@@ -54,6 +54,15 @@ module.exports = {
     plugins: [
       'expo-image',
       'expo-system-ui',
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/splash-icon.png',
+          imageWidth: 220,
+          resizeMode: 'contain',
+          backgroundColor: '#1D9E75',
+        },
+      ],
       '@react-native-firebase/app',
       '@react-native-firebase/auth',
     ],
