@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import { arrayUnion, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 
@@ -82,8 +83,9 @@ export default function EntrarListaScreen() {
         style={styles.backButton}
         onPress={() => navigation.goBack()}
         activeOpacity={0.8}
+        accessibilityLabel="Voltar"
       >
-        <Text style={styles.backButtonText}>‹</Text>
+        <Ionicons name="chevron-back" size={26} color={theme.colors.textPrimary} />
       </TouchableOpacity>
 
       <ScrollView
@@ -145,11 +147,6 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: theme.colors.textPrimary,
-    lineHeight: 30,
   },
   title: {
     ...theme.typography.heading,

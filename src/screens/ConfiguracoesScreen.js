@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import {
@@ -126,8 +127,9 @@ export default function ConfiguracoesScreen() {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           activeOpacity={0.8}
+          accessibilityLabel="Voltar"
         >
-          <Text style={styles.backButtonText}>‹</Text>
+          <Ionicons name="chevron-back" size={26} color={theme.colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>Configurações</Text>
         <View style={styles.backButton} />
@@ -221,11 +223,6 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: theme.colors.textPrimary,
-    lineHeight: 30,
   },
   title: {
     flex: 1,

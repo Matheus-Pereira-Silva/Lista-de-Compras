@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   addDoc,
@@ -134,9 +135,9 @@ function ImagemProduto({ uri, style }) {
   const semImagem = !uri || erro;
 
   return (
-    <View style={style}>
+    <View style={[style, semImagem && styles.itemImagemBoxVazia]}>
       {semImagem ? (
-        <Text style={styles.placeholderIcon}>🛒</Text>
+        <Ionicons name="basket-outline" size={20} color={theme.colors.primary} />
       ) : (
         <ExpoImage
           source={{ uri }}
@@ -165,8 +166,13 @@ function ItemCard({ item, onAlternarStatus, onEditar }) {
         style={[styles.checkbox, comprado && styles.checkboxChecked]}
         onPress={() => onAlternarStatus(item)}
         activeOpacity={0.8}
+        accessibilityLabel={comprado ? 'Marcar como pendente' : 'Marcar como comprado'}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: comprado }}
       >
-        {comprado && <Text style={styles.checkboxIcon}>✓</Text>}
+        {comprado && (
+          <Ionicons name="checkmark" size={16} color={theme.colors.textOnPrimary} />
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -191,16 +197,29 @@ function ItemCard({ item, onAlternarStatus, onEditar }) {
           </Text>
           <Text style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}>
             {item.quantidade}
-            {item.categoria ? ` · 🏷️ ${item.categoria}` : ''}
+            {item.categoria ? (
+              <>
+                {'  '}
+                <Ionicons
+                  name="pricetag-outline"
+                  size={11}
+                  color={comprado ? theme.colors.textDisabled : theme.colors.textSecondary}
+                />
+                {' ' + item.categoria}
+              </>
+            ) : (
+              ''
+            )}
           </Text>
           {/* Altura sempre reservada — só a opacidade do texto alterna, pra
               não fazer o card crescer/encolher quando a sincronização muda. */}
           <PersistentFade
             visible={pendenteDebounced}
             slide={false}
-            style={styles.itemSincronizandoSlot}
+            style={[styles.itemSincronizandoSlot, styles.linhaComIcone]}
           >
-            <Text style={styles.itemSincronizandoTexto}>🕒 Sincronizando...</Text>
+            <Ionicons name="time-outline" size={11} color={theme.colors.textPlaceholder} />
+            <Text style={styles.itemSincronizandoTexto}> Sincronizando...</Text>
           </PersistentFade>
         </View>
 
@@ -693,8 +712,9 @@ export default function DetalheListaScreen() {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.8}
+            accessibilityLabel="Voltar"
           >
-            <Text style={styles.backButtonText}>‹</Text>
+            <Ionicons name="chevron-back" size={26} color={theme.colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>
             {nomeExibido}
@@ -705,24 +725,27 @@ export default function DetalheListaScreen() {
                 style={styles.backButton}
                 onPress={compartilharLista}
                 activeOpacity={0.8}
+                accessibilityLabel="Compartilhar lista"
               >
-                <Text style={styles.headerActionIcon}>🔗</Text>
+                <Ionicons name="share-social-outline" size={20} color={theme.colors.textPrimary} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={sairDaLista}
                 activeOpacity={0.8}
+                accessibilityLabel="Sair da lista"
               >
-                <Text style={styles.headerActionIcon}>🚪</Text>
+                <Ionicons name="exit-outline" size={20} color={theme.colors.textPrimary} />
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={styles.backButton}
               onPress={abrirMenuLista}
               activeOpacity={0.8}
+              accessibilityLabel="Mais opções da lista"
             >
-              <Text style={styles.headerActionIcon}>⋮</Text>
+              <Ionicons name="ellipsis-vertical" size={20} color={theme.colors.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -733,9 +756,10 @@ export default function DetalheListaScreen() {
         <PersistentFade
           visible={temItensPendentesDebounced}
           slide={false}
-          style={styles.headerSyncLinha}
+          style={[styles.headerSyncLinha, styles.linhaComIcone]}
         >
-          <Text style={styles.headerSyncTexto}>☁️ Alterações pendentes de sincronização</Text>
+          <Ionicons name="cloud-outline" size={12} color={theme.colors.textPlaceholder} />
+          <Text style={styles.headerSyncTexto}> Alterações pendentes de sincronização</Text>
         </PersistentFade>
       </View>
 
@@ -814,10 +838,16 @@ export default function DetalheListaScreen() {
                 <TouchableOpacity
                   onPress={alternarMostrarComprados}
                   activeOpacity={0.7}
-                  style={styles.cabecalhoComprados}
+                  style={[styles.cabecalhoComprados, styles.linhaComIcone]}
+                  accessibilityLabel={mostrarComprados ? 'Recolher comprados' : 'Expandir comprados'}
                 >
+                  <Ionicons
+                    name={mostrarComprados ? 'chevron-down' : 'chevron-forward'}
+                    size={14}
+                    color={theme.colors.textPlaceholder}
+                  />
                   <Text style={styles.cabecalhoCompradosTexto}>
-                    {mostrarComprados ? '▾' : '▸'} Comprados ({totalComprados})
+                    {' '}Comprados ({totalComprados})
                   </Text>
                 </TouchableOpacity>
               ) : (
@@ -832,8 +862,9 @@ export default function DetalheListaScreen() {
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
         onPress={abrirModal}
         activeOpacity={0.8}
+        accessibilityLabel="Adicionar item"
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Ionicons name="add" size={30} color={theme.colors.textOnPrimary} />
       </TouchableOpacity>
 
       <Modal
@@ -910,11 +941,15 @@ export default function DetalheListaScreen() {
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={styles.formHeader}>
                   <TouchableOpacity
+                    style={[styles.linhaComIcone, styles.formBackButton]}
                     onPress={() => (itemEditando ? fecharModal() : setEtapa('busca'))}
                     activeOpacity={0.7}
                   >
+                    {!itemEditando && (
+                      <Ionicons name="chevron-back" size={16} color={theme.colors.primary} />
+                    )}
                     <Text style={styles.formBackText}>
-                      {itemEditando ? 'Cancelar' : '‹ Buscar'}
+                      {itemEditando ? 'Cancelar' : 'Buscar'}
                     </Text>
                   </TouchableOpacity>
                   <Text style={styles.modalTitle}>
@@ -1110,17 +1145,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backButtonText: {
-    fontSize: 28,
-    color: theme.colors.textPrimary,
-    lineHeight: 30,
-  },
   headerActions: {
     flexDirection: 'row',
     gap: 4,
-  },
-  headerActionIcon: {
-    fontSize: 20,
   },
   title: {
     flex: 1,
@@ -1249,11 +1276,6 @@ const styles = StyleSheet.create({
   checkboxChecked: {
     backgroundColor: theme.colors.primary,
   },
-  checkboxIcon: {
-    color: theme.colors.textOnPrimary,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   itemCardConteudo: {
     flex: 1,
     flexDirection: 'row',
@@ -1268,6 +1290,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  // Círculo verde-claro — só quando não há foto nem emoji de produto.
+  itemImagemBoxVazia: {
+    backgroundColor: theme.colors.primaryLight,
   },
   placeholderIcon: {
     fontSize: 18,
@@ -1288,6 +1314,11 @@ const styles = StyleSheet.create({
   itemSincronizandoSlot: {
     height: 15,
     marginTop: 3,
+  },
+  // Reaproveitada em toda linha que combina um ícone pequeno com texto.
+  linhaComIcone: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   itemSincronizandoTexto: {
     fontSize: 11,
@@ -1313,11 +1344,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...theme.shadow.fab,
-  },
-  fabIcon: {
-    fontSize: 32,
-    color: theme.colors.textOnPrimary,
-    lineHeight: 34,
   },
   modalOverlay: {
     flex: 1,
@@ -1404,11 +1430,13 @@ const styles = StyleSheet.create({
   formHeaderSpacer: {
     width: 60,
   },
+  formBackButton: {
+    width: 60,
+  },
   formBackText: {
     fontSize: 14,
     fontWeight: '600',
     color: theme.colors.primary,
-    width: 60,
   },
   formImagePreviewBox: {
     width: 72,

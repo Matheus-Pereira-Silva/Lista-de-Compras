@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { signOut } from '@react-native-firebase/auth';
 import {
   addDoc,
@@ -103,7 +104,7 @@ function ListaCard({ lista, onPress }) {
         slide={false}
         style={styles.cardSyncIcone}
       >
-        <Text style={styles.cardSyncIconeTexto}>☁️</Text>
+        <Ionicons name="cloud-outline" size={15} color={theme.colors.textPlaceholder} />
       </PersistentFade>
 
       <View style={styles.cardTopRow}>
@@ -288,8 +289,9 @@ export default function MinhasListasScreen() {
             style={styles.settingsButton}
             onPress={() => navigation.navigate('Configuracoes')}
             activeOpacity={0.8}
+            accessibilityLabel="Configurações"
           >
-            <Text style={styles.settingsIcon}>⚙️</Text>
+            <Ionicons name="settings-outline" size={22} color={theme.colors.textPrimary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.logoutButton}
@@ -302,9 +304,8 @@ export default function MinhasListasScreen() {
       </View>
 
       <PersistentFade visible={temListasPendentesDebounced} style={styles.syncBanner}>
-        <Text style={styles.syncBannerText}>
-          ☁️ Alterações pendentes de sincronização
-        </Text>
+        <Ionicons name="cloud-outline" size={14} color={theme.colors.textSecondary} />
+        <Text style={styles.syncBannerText}> Alterações pendentes de sincronização</Text>
       </PersistentFade>
 
       {loading ? (
@@ -346,16 +347,18 @@ export default function MinhasListasScreen() {
         style={[styles.fabSecundario, { bottom: 28 + insets.bottom }]}
         onPress={() => navigation.navigate('EntrarLista')}
         activeOpacity={0.8}
+        accessibilityLabel="Entrar com código"
       >
-        <Text style={styles.fabSecundarioIcon}>🔑</Text>
+        <Ionicons name="key-outline" size={20} color={theme.colors.textPrimary} />
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
         onPress={abrirModal}
         activeOpacity={0.8}
+        accessibilityLabel="Nova lista"
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Ionicons name="add" size={30} color={theme.colors.textOnPrimary} />
       </TouchableOpacity>
 
       <Modal
@@ -432,9 +435,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  settingsIcon: {
-    fontSize: 20,
-  },
   logoutButton: {
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
@@ -497,9 +497,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: theme.spacing.md,
-  },
-  cardSyncIconeTexto: {
-    fontSize: 13,
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -584,11 +581,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...theme.shadow.fab,
   },
-  fabIcon: {
-    fontSize: 32,
-    color: theme.colors.textOnPrimary,
-    lineHeight: 34,
-  },
   fabSecundario: {
     position: 'absolute',
     right: 92,
@@ -601,9 +593,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...theme.shadow.fabSecundario,
-  },
-  fabSecundarioIcon: {
-    fontSize: 20,
   },
   modalOverlay: {
     flex: 1,
