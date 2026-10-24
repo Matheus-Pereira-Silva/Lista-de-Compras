@@ -19,6 +19,8 @@ import { Image as ExpoImage } from 'expo-image';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import {
   addDoc,
   arrayRemove,
@@ -43,6 +45,7 @@ import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabled) {
@@ -242,6 +245,7 @@ export default function DetalheListaScreen() {
   // Enquanto a faixa global de offline está montada, ela já soma
   // insets.top (ver AppNavigator) — não soma de novo aqui.
   const offline = useOffline();
+  const showToast = useToast();
 
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -547,6 +551,7 @@ export default function DetalheListaScreen() {
           console.error('Erro ao excluir item:', error)
         );
         fecharModal();
+        showToast('Item removido');
       },
     });
   };
@@ -555,6 +560,7 @@ export default function DetalheListaScreen() {
 
   const alternarStatus = async (item) => {
     const novoStatus = item.status === 'comprado' ? 'pendente' : 'comprado';
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     if (timersRef.current.has(item.id)) {
       // Segundo toque antes do timer da transição anterior terminar: o
@@ -617,6 +623,15 @@ export default function DetalheListaScreen() {
     }).catch((error) => console.error('Erro ao abrir compartilhamento:', error));
   };
 
+  const copiarCodigo = () => {
+    const codigo = listaAtual?.codigoConvite;
+    if (!codigo) return;
+
+    Clipboard.setStringAsync(codigo)
+      .then(() => showToast('Código copiado'))
+      .catch((error) => console.error('Erro ao copiar código:', error));
+  };
+
   const revogarConvite = () => {
     const codigo = listaAtual?.codigoConvite;
     if (!codigo) return;
@@ -648,6 +663,7 @@ export default function DetalheListaScreen() {
           membros: arrayRemove(auth.currentUser.uid),
         }).catch((error) => console.error('Erro ao sair da lista:', error));
         navigation.goBack();
+        showToast('Você saiu da lista');
       },
     });
   };
@@ -669,6 +685,7 @@ export default function DetalheListaScreen() {
       console.error('Erro ao renomear lista:', error)
     );
     fecharRenomearLista();
+    showToast('Lista renomeada');
   };
 
   const excluirLista = () => {
@@ -774,9 +791,19 @@ export default function DetalheListaScreen() {
           <Text style={styles.codigoBannerTexto}>
             Código de convite: <Text style={styles.codigoBannerCodigo}>{listaAtual.codigoConvite}</Text>
           </Text>
-          <TouchableOpacity onPress={revogarConvite} activeOpacity={0.7}>
-            <Text style={styles.codigoBannerRevogar}>Revogar</Text>
-          </TouchableOpacity>
+          <View style={styles.codigoBannerAcoes}>
+            <TouchableOpacity
+              onPress={copiarCodigo}
+              activeOpacity={0.7}
+              style={styles.codigoBannerCopiar}
+              accessibilityLabel="Copiar código"
+            >
+              <Ionicons name="copy-outline" size={16} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={revogarConvite} activeOpacity={0.7}>
+              <Text style={styles.codigoBannerRevogar}>Revogar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -1200,11 +1227,21 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     letterSpacing: 1,
   },
+  codigoBannerAcoes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  codigoBannerCopiar: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   codigoBannerRevogar: {
     fontSize: 13,
     fontWeight: '600',
     color: theme.colors.error,
-    marginLeft: 12,
+    marginLeft: 4,
   },
   syncBanner: {
     flexDirection: 'row',

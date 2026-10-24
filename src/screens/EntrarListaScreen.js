@@ -12,6 +12,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
+import * as Haptics from 'expo-haptics';
 import { arrayUnion, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 
 import { auth, db } from '../services/firebase';
@@ -68,6 +69,7 @@ export default function EntrarListaScreen() {
         });
       }
 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       navigation.replace('DetalheLista', { listaId, listaNome: listaDados.nome });
     } catch (error) {
       console.error('Erro ao entrar na lista:', error);
