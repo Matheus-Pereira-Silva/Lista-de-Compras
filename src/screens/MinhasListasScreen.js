@@ -31,18 +31,6 @@ const QUANTIDADE_CARDS_SKELETON = 4;
 
 const formatarPreco = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
 
-const EMOJIS_LISTA = ['🛒', '🥬', '🍞', '🧴', '🥛', '🍎', '🏠', '🎉', '🥩', '🧃'];
-
-// Índice estável derivado do nome — a mesma lista sempre cai no mesmo
-// emoji, sem precisar salvar nada novo no Firestore.
-function obterEmojiLista(nome) {
-  let soma = 0;
-  for (let i = 0; i < nome.length; i++) {
-    soma += nome.charCodeAt(i);
-  }
-  return EMOJIS_LISTA[soma % EMOJIS_LISTA.length];
-}
-
 function formatarDataCurta(timestamp) {
   if (!timestamp?.toDate) return null;
   const data = timestamp.toDate();
@@ -91,24 +79,52 @@ function ListaCard({ lista, onPress }) {
   const concluida = totalItens > 0 && totalComprados === totalItens;
   const progresso = totalItens > 0 ? totalComprados / totalItens : 0;
 
-  const emoji = obterEmojiLista(lista.nome);
   const dataTexto = formatarDataCurta(lista.criadoEm);
   const quantidadeMembros = lista.membros?.length ?? 0;
 
   const pendenteDebounced = useDebouncedTrue(!!lista.pendenteSincronizacao, 400);
 
+  const subtituloPartes = [];
+  if (!carregando) {
+    subtituloPartes.push(totalItens === 1 ? '1 item' : `${totalItens} itens`);
+  }
+  if (dataTexto) {
+    subtituloPartes.push(`criada em ${dataTexto}`);
+  }
+
   return (
     <TouchableOpacity style={styles.card} onPress={() => onPress(lista)} activeOpacity={0.8}>
-      <View style={styles.cardTopRow}>
-        <View style={styles.cardIconBox}>
-          <Text style={styles.cardIconText}>{emoji}</Text>
-        </View>
+      {/* Ícone sobreposto (não ocupa espaço no fluxo) — some sem deixar
+          buraco no card, ao contrário da antiga linha de texto embaixo. */}
+      <PersistentFade
+        visible={pendenteDebounced}
+        slide={false}
+        style={styles.cardSyncIcone}
+      >
+        <Text style={styles.cardSyncIconeTexto}>☁️</Text>
+      </PersistentFade>
 
+      <View style={styles.cardTopRow}>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle} numberOfLines={1}>
             {lista.nome}
           </Text>
-          <Text style={styles.cardData}>{dataTexto ? `criada em ${dataTexto}` : ''}</Text>
+          {carregando ? (
+            erroItens ? (
+              <Text style={styles.cardData}>{erroItens}</Text>
+            ) : (
+              <SkeletonBlock
+                width="50%"
+                height={12}
+                borderRadius={4}
+                style={styles.skeletonSubtitulo}
+              />
+            )
+          ) : (
+            <Text style={styles.cardData} numberOfLines={1}>
+              {subtituloPartes.join(' · ')}
+            </Text>
+          )}
         </View>
 
         {!carregando && concluida && (
@@ -119,12 +135,14 @@ function ListaCard({ lista, onPress }) {
       </View>
 
       {carregando ? (
-        <View style={styles.progressoContainer}>
-          {erroItens ? (
-            <Text style={styles.progressoTexto}>{erroItens}</Text>
-          ) : (
+        !erroItens && (
+          <View style={styles.progressoContainer}>
             <SkeletonBlock width="70%" height={10} borderRadius={4} />
-          )}
+          </View>
+        )
+      ) : totalItens === 0 ? (
+        <View style={styles.progressoContainer}>
+          <Text style={styles.progressoTexto}>Lista vazia</Text>
         </View>
       ) : (
         <View style={styles.progressoContainer}>
@@ -132,24 +150,21 @@ function ListaCard({ lista, onPress }) {
             <View style={[styles.progressoPreenchido, { width: `${progresso * 100}%` }]} />
           </View>
           <Text style={styles.progressoTexto}>
-            {totalItens === 0 ? 'Lista vazia' : `${totalComprados} de ${totalItens} comprados`}
+            {totalComprados} de {totalItens} comprados
           </Text>
         </View>
       )}
 
-      <View style={styles.cardFooterRow}>
-        <View style={styles.badgeMembros}>
-          <Text style={styles.badgeMembrosTexto}>👤 {quantidadeMembros}</Text>
+      {(quantidadeMembros > 1 || (!carregando && temPreco)) && (
+        <View style={styles.cardFooterRow}>
+          <Text style={styles.cardMembrosTexto}>
+            {quantidadeMembros > 1 ? `${quantidadeMembros} pessoas` : ''}
+          </Text>
+          {!carregando && temPreco && (
+            <Text style={styles.cardTotalEstimado}>{formatarPreco(totalEstimado)}</Text>
+          )}
         </View>
-
-        {!carregando && temPreco && (
-          <Text style={styles.cardTotalEstimado}>{formatarPreco(totalEstimado)}</Text>
-        )}
-      </View>
-
-      <PersistentFade visible={pendenteDebounced} slide={false} style={styles.cardSyncSlot}>
-        <Text style={styles.cardSyncTexto}>🕒 Sincronizando...</Text>
-      </PersistentFade>
+      )}
     </TouchableOpacity>
   );
 }
@@ -459,12 +474,12 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 24,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 18,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 18,
     marginBottom: 14,
     shadowColor: '#000',
@@ -476,35 +491,36 @@ const styles = StyleSheet.create({
   skeletonTitulo: {
     marginBottom: 8,
   },
+  // Sobreposto (position absolute) — não ocupa espaço no fluxo, então
+  // aparecer/sumir nunca deixa buraco no card.
+  cardSyncIcone: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+  },
+  cardSyncIconeTexto: {
+    fontSize: 13,
+  },
   cardTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  cardIconText: {
-    fontSize: 22,
+    alignItems: 'flex-start',
   },
   cardInfo: {
     flex: 1,
+    paddingRight: 24,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: '#1D1D1D',
   },
   cardData: {
     fontSize: 12,
     color: '#9B9B9B',
-    marginTop: 2,
-    minHeight: 15,
+    marginTop: 3,
+  },
+  skeletonSubtitulo: {
+    marginTop: 4,
   },
   badgeConcluida: {
     backgroundColor: '#EAF7F1',
@@ -519,55 +535,43 @@ const styles = StyleSheet.create({
     color: '#1D9E75',
   },
   progressoContainer: {
-    height: 28,
-    marginTop: 10,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 12,
   },
   progressoTrilha: {
-    height: 4,
+    flex: 1,
+    height: 3,
     borderRadius: 2,
     backgroundColor: '#E5E5E5',
     overflow: 'hidden',
-    marginBottom: 6,
   },
   progressoPreenchido: {
-    height: 4,
+    height: 3,
     borderRadius: 2,
     backgroundColor: '#1D9E75',
   },
   progressoTexto: {
     fontSize: 12,
     color: '#6B6B6B',
+    flexShrink: 0,
   },
   cardFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 8,
   },
-  badgeMembros: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeMembrosTexto: {
+  cardMembrosTexto: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#6B6B6B',
+    color: '#9B9B9B',
   },
   cardTotalEstimado: {
     fontSize: 13,
     fontWeight: '700',
     color: '#1D1D1D',
-  },
-  cardSyncSlot: {
-    height: 15,
-    marginTop: 6,
-  },
-  cardSyncTexto: {
-    fontSize: 11,
-    color: '#9B9B9B',
   },
   fab: {
     position: 'absolute',
