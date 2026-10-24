@@ -821,9 +821,14 @@ export default function DetalheListaScreen() {
         </FadeInView>
       ) : itens.length === 0 ? (
         <FadeInView style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            Nenhum item ainda.{'\n'}Toque no + para adicionar o primeiro.
-          </Text>
+          <View style={styles.emptyIconBox}>
+            <Ionicons name="basket-outline" size={36} color={theme.colors.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>Sua lista está vazia</Text>
+          <Text style={styles.emptyText}>Adicione o primeiro item para começar.</Text>
+          <TouchableOpacity style={styles.emptyButton} onPress={abrirModal} activeOpacity={0.8}>
+            <Text style={styles.emptyButtonText}>Adicionar item</Text>
+          </TouchableOpacity>
         </FadeInView>
       ) : (
         <FadeInView style={styles.listaContainer}>
@@ -1242,6 +1247,37 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  emptyIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.round,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.radius.md,
+    marginTop: theme.spacing.xl,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.textOnPrimary,
   },
   listaContainer: {
     flex: 1,

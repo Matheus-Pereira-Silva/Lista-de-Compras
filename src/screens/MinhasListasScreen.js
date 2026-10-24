@@ -328,9 +328,23 @@ export default function MinhasListasScreen() {
         </FadeInView>
       ) : listas.length === 0 ? (
         <FadeInView style={styles.emptyContainer}>
+          <View style={styles.emptyIconBox}>
+            <Ionicons name="cart-outline" size={36} color={theme.colors.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>Nenhuma lista ainda</Text>
           <Text style={styles.emptyText}>
-            Você ainda não tem nenhuma lista.{'\n'}Toque no + para criar a primeira.
+            Crie sua primeira lista de compras ou entre numa que alguém já compartilhou com você.
           </Text>
+          <TouchableOpacity style={styles.emptyButton} onPress={abrirModal} activeOpacity={0.8}>
+            <Text style={styles.emptyButtonText}>Criar minha primeira lista</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.emptySecundario}
+            onPress={() => navigation.navigate('EntrarLista')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.emptySecundarioText}>Entrar com código</Text>
+          </TouchableOpacity>
         </FadeInView>
       ) : (
         <FadeInView style={styles.listaContainer}>
@@ -473,6 +487,49 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  emptyIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.radius.round,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.radius.md,
+    marginTop: theme.spacing.xl,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.textOnPrimary,
+  },
+  emptySecundario: {
+    marginTop: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptySecundarioText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.primary,
   },
   listaContainer: {
     flex: 1,
