@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl,
   },
   backButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

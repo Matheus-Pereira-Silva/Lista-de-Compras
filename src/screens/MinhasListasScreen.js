@@ -104,7 +104,7 @@ function ListaCard({ lista, onPress }) {
         slide={false}
         style={styles.cardSyncIcone}
       >
-        <Ionicons name="cloud-outline" size={15} color={theme.colors.textPlaceholder} />
+        <Ionicons name="cloud-outline" size={15} color={theme.colors.textSecondary} />
       </PersistentFade>
 
       <View style={styles.cardTopRow}>
@@ -445,8 +445,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md - 2,
   },
   settingsButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   },
   cardData: {
     fontSize: 12,
-    color: theme.colors.textPlaceholder,
+    color: theme.colors.textSecondary,
     marginTop: 3,
   },
   skeletonSubtitulo: {
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   },
   cardMembrosTexto: {
     fontSize: 12,
-    color: theme.colors.textPlaceholder,
+    color: theme.colors.textSecondary,
   },
   cardTotalEstimado: {
     fontSize: 13,
@@ -692,6 +692,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: theme.radius.md,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalButtonCancel: {
     backgroundColor: theme.colors.backgroundMuted,

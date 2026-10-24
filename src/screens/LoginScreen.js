@@ -254,6 +254,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: theme.radius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
   tabActive: {
     backgroundColor: theme.colors.primary,
@@ -303,6 +305,8 @@ const styles = StyleSheet.create({
   forgotPasswordLink: {
     alignSelf: 'flex-end',
     marginBottom: theme.spacing.lg,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   forgotPasswordText: {
     ...theme.typography.label,

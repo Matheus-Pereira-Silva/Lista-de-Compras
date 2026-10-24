@@ -170,6 +170,7 @@ function ItemCard({ item, onAlternarStatus, onEditar }) {
         style={[styles.checkbox, comprado && styles.checkboxChecked]}
         onPress={() => onAlternarStatus(item)}
         activeOpacity={0.8}
+        hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}
         accessibilityLabel={comprado ? 'Marcar como pendente' : 'Marcar como comprado'}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: comprado }}
@@ -222,7 +223,7 @@ function ItemCard({ item, onAlternarStatus, onEditar }) {
             slide={false}
             style={[styles.itemSincronizandoSlot, styles.linhaComIcone]}
           >
-            <Ionicons name="time-outline" size={11} color={theme.colors.textPlaceholder} />
+            <Ionicons name="time-outline" size={11} color={theme.colors.textSecondary} />
             <Text style={styles.itemSincronizandoTexto}> Sincronizando...</Text>
           </PersistentFade>
         </View>
@@ -775,7 +776,7 @@ export default function DetalheListaScreen() {
           slide={false}
           style={[styles.headerSyncLinha, styles.linhaComIcone]}
         >
-          <Ionicons name="cloud-outline" size={12} color={theme.colors.textPlaceholder} />
+          <Ionicons name="cloud-outline" size={12} color={theme.colors.textSecondary} />
           <Text style={styles.headerSyncTexto}> Alterações pendentes de sincronização</Text>
         </PersistentFade>
       </View>
@@ -796,11 +797,16 @@ export default function DetalheListaScreen() {
               onPress={copiarCodigo}
               activeOpacity={0.7}
               style={styles.codigoBannerCopiar}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               accessibilityLabel="Copiar código"
             >
               <Ionicons name="copy-outline" size={16} color={theme.colors.primary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={revogarConvite} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={revogarConvite}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={styles.codigoBannerRevogar}>Revogar</Text>
             </TouchableOpacity>
           </View>
@@ -878,7 +884,7 @@ export default function DetalheListaScreen() {
                   <Ionicons
                     name={mostrarComprados ? 'chevron-down' : 'chevron-forward'}
                     size={14}
-                    color={theme.colors.textPlaceholder}
+                    color={theme.colors.textSecondary}
                   />
                   <Text style={styles.cabecalhoCompradosTexto}>
                     {' '}Comprados ({totalComprados})
@@ -1188,11 +1194,11 @@ const styles = StyleSheet.create({
   headerSyncTexto: {
     fontSize: 11,
     fontWeight: '600',
-    color: theme.colors.textPlaceholder,
+    color: theme.colors.textSecondary,
   },
   backButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1343,11 +1349,12 @@ const styles = StyleSheet.create({
   cabecalhoComprados: {
     paddingVertical: 6,
     marginBottom: 8,
+    minHeight: 44,
   },
   cabecalhoCompradosTexto: {
     fontSize: 13,
     fontWeight: '600',
-    color: theme.colors.textPlaceholder,
+    color: theme.colors.textSecondary,
   },
   itemCard: {
     flexDirection: 'row',
@@ -1418,7 +1425,7 @@ const styles = StyleSheet.create({
   },
   itemSincronizandoTexto: {
     fontSize: 11,
-    color: theme.colors.textPlaceholder,
+    color: theme.colors.textSecondary,
   },
   itemTextComprado: {
     textDecorationLine: 'line-through',
@@ -1528,6 +1535,8 @@ const styles = StyleSheet.create({
   },
   formBackButton: {
     width: 60,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   formBackText: {
     fontSize: 14,
@@ -1613,6 +1622,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalButtonFull: {
     alignItems: 'center',
