@@ -42,6 +42,7 @@ import theme from '../theme';
 import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabled) {
@@ -264,6 +265,15 @@ export default function DetalheListaScreen() {
 
   const [renomeioVisible, setRenomeioVisible] = useState(false);
   const [novoNomeLista, setNovoNomeLista] = useState('');
+
+  // Confirmação genérica (substitui Alert.alert) — guarda os dados da
+  // ação pendente; um único <ConfirmDialog> no JSX reflete esse estado.
+  const [confirmacao, setConfirmacao] = useState(null);
+  const fecharConfirmacao = () => setConfirmacao(null);
+  const confirmarAcao = () => {
+    confirmacao?.onConfirmar();
+    fecharConfirmacao();
+  };
 
   // Ids de itens que acabaram de ser marcados/desmarcados e ainda não
   // devem mudar de grupo na lista (ver alternarStatus). timersRef guarda
@@ -525,19 +535,18 @@ export default function DetalheListaScreen() {
   };
 
   const excluirItem = (item) => {
-    Alert.alert('Excluir item', `Remover "${item.nome}" da lista?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: () => {
-          deleteDoc(doc(db, 'listas', listaId, 'itens', item.id)).catch((error) =>
-            console.error('Erro ao excluir item:', error)
-          );
-          fecharModal();
-        },
+    setConfirmacao({
+      titulo: 'Excluir item',
+      mensagem: `Remover "${item.nome}" da lista?`,
+      textoConfirmar: 'Excluir',
+      destrutivo: true,
+      onConfirmar: () => {
+        deleteDoc(doc(db, 'listas', listaId, 'itens', item.id)).catch((error) =>
+          console.error('Erro ao excluir item:', error)
+        );
+        fecharModal();
       },
-    ]);
+    });
   };
 
   const ATRASO_TROCA_DE_GRUPO = 1200;
@@ -610,41 +619,35 @@ export default function DetalheListaScreen() {
     const codigo = listaAtual?.codigoConvite;
     if (!codigo) return;
 
-    Alert.alert(
-      'Revogar convite',
-      'O código atual deixará de funcionar. Você pode gerar um novo depois.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Revogar',
-          style: 'destructive',
-          onPress: () => {
-            deleteDoc(doc(db, 'convites', codigo)).catch((error) =>
-              console.error('Erro ao revogar convite:', error)
-            );
-            updateDoc(doc(db, 'listas', listaId), { codigoConvite: deleteField() }).catch(
-              (error) => console.error('Erro ao limpar código de convite:', error)
-            );
-          },
-        },
-      ]
-    );
+    setConfirmacao({
+      titulo: 'Revogar convite',
+      mensagem: 'O código atual deixará de funcionar. Você pode gerar um novo depois.',
+      textoConfirmar: 'Revogar',
+      destrutivo: true,
+      onConfirmar: () => {
+        deleteDoc(doc(db, 'convites', codigo)).catch((error) =>
+          console.error('Erro ao revogar convite:', error)
+        );
+        updateDoc(doc(db, 'listas', listaId), { codigoConvite: deleteField() }).catch(
+          (error) => console.error('Erro ao limpar código de convite:', error)
+        );
+      },
+    });
   };
 
   const sairDaLista = () => {
-    Alert.alert('Sair da lista', `Você vai deixar de ver "${nomeExibido}".`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: () => {
-          updateDoc(doc(db, 'listas', listaId), {
-            membros: arrayRemove(auth.currentUser.uid),
-          }).catch((error) => console.error('Erro ao sair da lista:', error));
-          navigation.goBack();
-        },
+    setConfirmacao({
+      titulo: 'Sair da lista',
+      mensagem: `Você vai deixar de ver "${nomeExibido}".`,
+      textoConfirmar: 'Sair',
+      destrutivo: true,
+      onConfirmar: () => {
+        updateDoc(doc(db, 'listas', listaId), {
+          membros: arrayRemove(auth.currentUser.uid),
+        }).catch((error) => console.error('Erro ao sair da lista:', error));
+        navigation.goBack();
       },
-    ]);
+    });
   };
 
   const abrirRenomearLista = () => {
@@ -667,32 +670,27 @@ export default function DetalheListaScreen() {
   };
 
   const excluirLista = () => {
-    Alert.alert(
-      'Excluir lista',
-      `Isso vai apagar "${nomeExibido}" e todos os itens dela para todos os membros. Essa ação não pode ser desfeita.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => {
-            // Mesmo padrão fogo-e-esquece: não aguarda o commit do batch,
-            // só sai da tela — o Firestore aplica localmente e sincroniza
-            // quando a conexão voltar.
-            const batch = writeBatch(db);
-            itens.forEach((item) => {
-              batch.delete(doc(db, 'listas', listaId, 'itens', item.id));
-            });
-            if (listaAtual?.codigoConvite) {
-              batch.delete(doc(db, 'convites', listaAtual.codigoConvite));
-            }
-            batch.delete(doc(db, 'listas', listaId));
-            batch.commit().catch((error) => console.error('Erro ao excluir lista:', error));
-            navigation.goBack();
-          },
-        },
-      ]
-    );
+    setConfirmacao({
+      titulo: 'Excluir lista',
+      mensagem: `Isso vai apagar "${nomeExibido}" e todos os itens dela para todos os membros. Essa ação não pode ser desfeita.`,
+      textoConfirmar: 'Excluir',
+      destrutivo: true,
+      onConfirmar: () => {
+        // Mesmo padrão fogo-e-esquece: não aguarda o commit do batch,
+        // só sai da tela — o Firestore aplica localmente e sincroniza
+        // quando a conexão voltar.
+        const batch = writeBatch(db);
+        itens.forEach((item) => {
+          batch.delete(doc(db, 'listas', listaId, 'itens', item.id));
+        });
+        if (listaAtual?.codigoConvite) {
+          batch.delete(doc(db, 'convites', listaAtual.codigoConvite));
+        }
+        batch.delete(doc(db, 'listas', listaId));
+        batch.commit().catch((error) => console.error('Erro ao excluir lista:', error));
+        navigation.goBack();
+      },
+    });
   };
 
   const abrirMenuLista = () => {
@@ -880,6 +878,8 @@ export default function DetalheListaScreen() {
                 <Text style={styles.modalTitle}>Adicionar item</Text>
 
                 <TextInput
+
+                  keyboardAppearance="light"
                   style={styles.modalInput}
                   placeholder="Buscar produto (ex: arroz, leite...)"
                   placeholderTextColor={theme.colors.textPlaceholder}
@@ -967,6 +967,8 @@ export default function DetalheListaScreen() {
                 )}
 
                 <TextInput
+
+                  keyboardAppearance="light"
                   style={styles.modalInput}
                   placeholder="Nome do item"
                   placeholderTextColor={theme.colors.textPlaceholder}
@@ -1019,6 +1021,7 @@ export default function DetalheListaScreen() {
 
                 <Text style={styles.fieldLabel}>Categoria (opcional)</Text>
                 <TextInput
+                  keyboardAppearance="light"
                   style={styles.modalInput}
                   placeholder="Ex: Limpeza"
                   placeholderTextColor={theme.colors.textPlaceholder}
@@ -1028,6 +1031,7 @@ export default function DetalheListaScreen() {
 
                 <Text style={styles.fieldLabel}>Preço (opcional)</Text>
                 <TextInput
+                  keyboardAppearance="light"
                   style={styles.modalInput}
                   placeholder="R$ 0,00"
                   placeholderTextColor={theme.colors.textPlaceholder}
@@ -1081,6 +1085,7 @@ export default function DetalheListaScreen() {
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={styles.modalTitle}>Renomear lista</Text>
               <TextInput
+                keyboardAppearance="light"
                 style={styles.modalInput}
                 placeholder="Nome da lista"
                 placeholderTextColor={theme.colors.textPlaceholder}
@@ -1109,6 +1114,16 @@ export default function DetalheListaScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <ConfirmDialog
+        visible={!!confirmacao}
+        title={confirmacao?.titulo}
+        message={confirmacao?.mensagem}
+        confirmLabel={confirmacao?.textoConfirmar}
+        destructive={confirmacao?.destrutivo}
+        onConfirm={confirmarAcao}
+        onCancel={fecharConfirmacao}
+      />
     </View>
   );
 }

@@ -98,6 +98,8 @@ export default function EntrarListaScreen() {
         </Text>
 
         <TextInput
+
+          keyboardAppearance="light"
           style={styles.input}
           placeholder="CÓDIGO"
           placeholderTextColor={theme.colors.textPlaceholder}

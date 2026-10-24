@@ -375,6 +375,7 @@ export default function MinhasListasScreen() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Nova lista</Text>
               <TextInput
+                keyboardAppearance="light"
                 style={styles.modalInput}
                 placeholder="Nome da lista"
                 placeholderTextColor={theme.colors.textPlaceholder}

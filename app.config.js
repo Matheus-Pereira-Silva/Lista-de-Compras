@@ -11,6 +11,10 @@ module.exports = {
     },
     scheme: 'listacompras',
     android: {
+      // userInterfaceStyle no nivel raiz nao basta no Android — precisa
+      // do plugin expo-system-ui (ver abaixo) pra esse valor realmente
+      // forcar o tema claro, inclusive em dialogos e teclado nativos.
+      userInterfaceStyle: 'light',
       adaptiveIcon: {
         backgroundColor: '#E6F4FE',
         foregroundImage: './assets/android-icon-foreground.png',
@@ -47,6 +51,11 @@ module.exports = {
         projectId: '7876bc81-dafc-4792-aad8-ff74fe906dff',
       },
     },
-    plugins: ['expo-image', '@react-native-firebase/app', '@react-native-firebase/auth'],
+    plugins: [
+      'expo-image',
+      'expo-system-ui',
+      '@react-native-firebase/app',
+      '@react-native-firebase/auth',
+    ],
   },
 };

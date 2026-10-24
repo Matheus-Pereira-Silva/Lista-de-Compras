@@ -165,6 +165,7 @@ export default function ConfiguracoesScreen() {
             <>
               <Text style={styles.fieldLabel}>Confirme sua senha para continuar</Text>
               <TextInput
+                keyboardAppearance="light"
                 style={styles.input}
                 placeholder="Senha"
                 placeholderTextColor={theme.colors.textPlaceholder}

@@ -130,6 +130,8 @@ export default function LoginScreen() {
         </View>
 
         <TextInput
+
+          keyboardAppearance="light"
           style={styles.input}
           placeholder="E-mail"
           placeholderTextColor={theme.colors.textPlaceholder}
@@ -141,6 +143,8 @@ export default function LoginScreen() {
         />
 
         <TextInput
+
+          keyboardAppearance="light"
           style={styles.input}
           placeholder="Senha"
           placeholderTextColor={theme.colors.textPlaceholder}
