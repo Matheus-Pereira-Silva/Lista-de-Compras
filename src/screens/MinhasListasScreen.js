@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
+import theme from '../theme';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
@@ -373,7 +374,7 @@ export default function MinhasListasScreen() {
               <TextInput
                 style={styles.modalInput}
                 placeholder="Nome da lista"
-                placeholderTextColor="#9B9B9B"
+                placeholderTextColor={theme.colors.textPlaceholder}
                 value={novaListaNome}
                 onChangeText={setNovaListaNome}
                 autoFocus
@@ -406,24 +407,24 @@ export default function MinhasListasScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.lg,
   },
   title: {
+    ...theme.typography.heading,
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: theme.spacing.md - 2,
   },
   settingsButton: {
     width: 36,
@@ -435,41 +436,40 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   logoutButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.backgroundMuted,
   },
   logoutText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
   syncBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 24,
-    marginBottom: 12,
-    paddingVertical: 8,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.backgroundMuted,
   },
   syncBannerText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B6B6B',
+    ...theme.typography.label,
+    color: theme.colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.spacing.xl,
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -477,30 +477,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.spacing.xl,
     paddingBottom: 120,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.xl,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl - 6,
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    ...theme.shadow.card,
   },
   skeletonTitulo: {
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   // Sobreposto (position absolute) — não ocupa espaço no fluxo, então
   // aparecer/sumir nunca deixa buraco no card.
   cardSyncIcone: {
     position: 'absolute',
     top: 10,
-    right: 12,
+    right: theme.spacing.md,
   },
   cardSyncIconeTexto: {
     fontSize: 13,
@@ -511,90 +507,86 @@ const styles = StyleSheet.create({
   },
   cardInfo: {
     flex: 1,
-    paddingRight: 24,
+    paddingRight: theme.spacing.xl,
   },
   cardTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
   },
   cardData: {
     fontSize: 12,
-    color: '#9B9B9B',
+    color: theme.colors.textPlaceholder,
     marginTop: 3,
   },
   skeletonSubtitulo: {
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   badgeConcluida: {
-    backgroundColor: '#EAF7F1',
+    backgroundColor: theme.colors.primaryLight,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginLeft: 8,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.sm,
+    marginLeft: theme.spacing.sm,
   },
   badgeConcluidaTexto: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#1D9E75',
+    color: theme.colors.primary,
   },
   progressoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 12,
+    gap: theme.spacing.md - 2,
+    marginTop: theme.spacing.md,
   },
   progressoTrilha: {
     flex: 1,
     height: 3,
     borderRadius: 2,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: theme.colors.track,
     overflow: 'hidden',
   },
   progressoPreenchido: {
     height: 3,
     borderRadius: 2,
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
   },
   progressoTexto: {
     fontSize: 12,
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
     flexShrink: 0,
   },
   cardFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   cardMembrosTexto: {
     fontSize: 12,
-    color: '#9B9B9B',
+    color: theme.colors.textPlaceholder,
   },
   cardTotalEstimado: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
   },
   fab: {
     position: 'absolute',
-    right: 24,
+    right: theme.spacing.xl,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    ...theme.shadow.fab,
   },
   fabIcon: {
     fontSize: 32,
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     lineHeight: 34,
   },
   fabSecundario: {
@@ -603,75 +595,71 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    ...theme.shadow.fabSecundario,
   },
   fabSecundarioIcon: {
     fontSize: 20,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: theme.colors.overlay,
   },
   modalScrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.spacing.xl,
   },
   modalContent: {
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1D1D1D',
-    marginBottom: 16,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.lg,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     marginBottom: 20,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: theme.spacing.md,
   },
   modalButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: theme.radius.md,
   },
   modalButtonCancel: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
   },
   modalButtonConfirm: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
   },
   modalButtonCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
   modalButtonConfirmText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
   },
 });

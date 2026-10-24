@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
-const COR_BASE = '#E5E5E5';
+import theme from '../theme';
+
+const COR_BASE = theme.colors.track;
 const COR_BRILHO = 'rgba(255, 255, 255, 0.55)';
 const DURACAO_SHIMMER_MS = 1200;
 

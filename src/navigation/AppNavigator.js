@@ -10,6 +10,7 @@ import { onAuthStateChanged } from '@react-native-firebase/auth';
 
 import { auth } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
+import theme from '../theme';
 import OfflineBanner from '../components/OfflineBanner';
 import LoginScreen from '../screens/LoginScreen';
 import MinhasListasScreen from '../screens/MinhasListasScreen';
@@ -97,7 +98,7 @@ export default function AppNavigator() {
   if (initializing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1D9E75" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -136,11 +137,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   rootContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   navigatorContainer: {
     flex: 1,

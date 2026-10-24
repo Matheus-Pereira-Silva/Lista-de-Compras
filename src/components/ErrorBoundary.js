@@ -1,6 +1,8 @@
 import { Component } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import theme from '../theme';
+
 // Rede de segurança final: se qualquer erro não tratado escapar até aqui
 // (por exemplo, algo fora dos onSnapshot/addDoc já protegidos), mostra uma
 // tela de erro com opção de tentar novamente, em vez de deixar o app
@@ -48,31 +50,31 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
-    backgroundColor: '#fff',
+    paddingHorizontal: theme.spacing.xxl,
+    backgroundColor: theme.colors.background,
   },
   titulo: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1D1D1D',
-    marginBottom: 8,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   texto: {
     fontSize: 15,
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing.xl,
     lineHeight: 21,
   },
   botao: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingHorizontal: theme.spacing.xxl,
+    borderRadius: theme.radius.md,
   },
   botaoTexto: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '600',
   },

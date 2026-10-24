@@ -16,6 +16,7 @@ import {
 } from '@react-native-firebase/auth';
 
 import { auth } from '../services/firebase';
+import theme from '../theme';
 
 const ERROR_MESSAGES = {
   'auth/email-already-in-use': 'Esse e-mail já está em uso. Tente entrar em vez de criar conta.',
@@ -131,7 +132,7 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="E-mail"
-          placeholderTextColor="#9B9B9B"
+          placeholderTextColor={theme.colors.textPlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
@@ -142,7 +143,7 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Senha"
-          placeholderTextColor="#9B9B9B"
+          placeholderTextColor={theme.colors.textPlaceholder}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -169,7 +170,7 @@ export default function LoginScreen() {
           activeOpacity={0.8}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.textOnPrimary} />
           ) : (
             <Text style={styles.buttonText}>{isSignUp ? 'Criar conta' : 'Entrar'}</Text>
           )}
@@ -182,98 +183,95 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1D1D1D',
-    marginBottom: 8,
+    ...theme.typography.title,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B6B6B',
-    marginBottom: 32,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xxl,
     textAlign: 'center',
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#F0F0F0',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
+    backgroundColor: theme.colors.backgroundMuted,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.xs,
+    marginBottom: theme.spacing.xl,
     width: '100%',
   },
   tab: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
   tabTextActive: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
   },
   input: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#1D1D1D',
-    marginBottom: 16,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.lg,
   },
   forgotPasswordLink: {
     alignSelf: 'flex-end',
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   forgotPasswordText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1D9E75',
+    ...theme.typography.label,
+    color: theme.colors.primary,
   },
   errorText: {
-    color: '#D14343',
+    color: theme.colors.error,
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
     textAlign: 'center',
   },
   infoText: {
-    color: '#1D9E75',
+    color: theme.colors.primary,
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingHorizontal: theme.spacing.xxl,
+    borderRadius: theme.radius.md,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.bodyBold,
+    color: theme.colors.textOnPrimary,
   },
 });

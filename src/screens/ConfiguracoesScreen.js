@@ -30,6 +30,7 @@ import {
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
+import theme from '../theme';
 
 export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
@@ -164,7 +165,7 @@ export default function ConfiguracoesScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Senha"
-                placeholderTextColor="#9B9B9B"
+                placeholderTextColor={theme.colors.textPlaceholder}
                 secureTextEntry
                 value={senha}
                 onChangeText={setSenha}
@@ -189,7 +190,7 @@ export default function ConfiguracoesScreen() {
                   activeOpacity={0.8}
                 >
                   {excluindo ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={theme.colors.textOnPrimary} />
                   ) : (
                     <Text style={styles.dangerButtonText}>Confirmar exclusão</Text>
                   )}
@@ -206,14 +207,14 @@ export default function ConfiguracoesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
   backButton: {
     width: 36,
@@ -223,101 +224,98 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 28,
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     lineHeight: 30,
   },
   title: {
     flex: 1,
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1D1D1D',
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
     textAlign: 'center',
   },
   content: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.sm,
   },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B6B6B',
-    marginBottom: 6,
+    ...theme.typography.label,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs + 2,
   },
   emailText: {
     fontSize: 16,
-    color: '#1D1D1D',
-    marginBottom: 28,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xl + 4,
   },
   dangerCard: {
-    borderRadius: 16,
-    padding: 18,
-    backgroundColor: '#FDECEC',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl - 6,
+    backgroundColor: theme.colors.errorLight,
     borderWidth: 1,
-    borderColor: '#F7D4D4',
+    borderColor: theme.colors.errorBorder,
   },
   dangerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#D14343',
-    marginBottom: 8,
+    color: theme.colors.error,
+    marginBottom: theme.spacing.sm,
   },
   dangerText: {
     fontSize: 13,
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
     lineHeight: 19,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   dangerButton: {
-    backgroundColor: '#D14343',
-    paddingVertical: 12,
-    borderRadius: 12,
+    backgroundColor: theme.colors.error,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dangerButtonText: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B6B6B',
-    marginBottom: 8,
+    ...theme.typography.label,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#1D1D1D',
-    marginBottom: 12,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
   },
   errorText: {
-    color: '#D14343',
+    color: theme.colors.error,
     fontSize: 13,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   confirmacaoActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: theme.spacing.md,
   },
   modalButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg + 4,
+    borderRadius: theme.radius.md,
   },
   modalButtonFlex: {
     flex: 1,
   },
   modalButtonCancel: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
   },
   modalButtonCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
 });

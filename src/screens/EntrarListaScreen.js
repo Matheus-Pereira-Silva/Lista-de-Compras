@@ -14,6 +14,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { arrayUnion, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 
 import { auth, db } from '../services/firebase';
+import theme from '../theme';
 
 export default function EntrarListaScreen() {
   const navigation = useNavigation();
@@ -97,7 +98,7 @@ export default function EntrarListaScreen() {
         <TextInput
           style={styles.input}
           placeholder="CÓDIGO"
-          placeholderTextColor="#9B9B9B"
+          placeholderTextColor={theme.colors.textPlaceholder}
           value={codigo}
           onChangeText={(texto) => setCodigo(texto.toUpperCase())}
           autoCapitalize="characters"
@@ -114,7 +115,7 @@ export default function EntrarListaScreen() {
           activeOpacity={0.8}
         >
           {carregando ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.textOnPrimary} />
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
           )}
@@ -127,19 +128,19 @@ export default function EntrarListaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xl,
   },
   backButton: {
     position: 'absolute',
     top: 60,
-    left: 16,
+    left: theme.spacing.lg,
     width: 36,
     height: 36,
     alignItems: 'center',
@@ -147,55 +148,53 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 28,
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     lineHeight: 30,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1D1D1D',
-    marginBottom: 8,
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: '#6B6B6B',
-    marginBottom: 32,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xxl,
     textAlign: 'center',
     lineHeight: 21,
   },
   input: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 14,
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 4,
     textAlign: 'center',
-    color: '#1D1D1D',
-    marginBottom: 16,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.lg,
   },
   errorText: {
-    color: '#D14343',
+    color: theme.colors.error,
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingHorizontal: theme.spacing.xxl,
+    borderRadius: theme.radius.md,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.bodyBold,
+    color: theme.colors.textOnPrimary,
   },
 });

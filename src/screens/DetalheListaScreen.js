@@ -37,6 +37,7 @@ import {
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
+import theme from '../theme';
 import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
@@ -850,7 +851,7 @@ export default function DetalheListaScreen() {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Buscar produto (ex: arroz, leite...)"
-                  placeholderTextColor="#9B9B9B"
+                  placeholderTextColor={theme.colors.textPlaceholder}
                   value={searchTerm}
                   onChangeText={setSearchTerm}
                   autoFocus
@@ -933,7 +934,7 @@ export default function DetalheListaScreen() {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Nome do item"
-                  placeholderTextColor="#9B9B9B"
+                  placeholderTextColor={theme.colors.textPlaceholder}
                   value={nome}
                   onChangeText={setNome}
                 />
@@ -985,7 +986,7 @@ export default function DetalheListaScreen() {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Ex: Limpeza"
-                  placeholderTextColor="#9B9B9B"
+                  placeholderTextColor={theme.colors.textPlaceholder}
                   value={categoria}
                   onChangeText={setCategoria}
                 />
@@ -994,7 +995,7 @@ export default function DetalheListaScreen() {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="R$ 0,00"
-                  placeholderTextColor="#9B9B9B"
+                  placeholderTextColor={theme.colors.textPlaceholder}
                   value={precoFormatado}
                   onChangeText={handlePrecoChange}
                   keyboardType="number-pad"
@@ -1047,7 +1048,7 @@ export default function DetalheListaScreen() {
               <TextInput
                 style={styles.modalInput}
                 placeholder="Nome da lista"
-                placeholderTextColor="#9B9B9B"
+                placeholderTextColor={theme.colors.textPlaceholder}
                 value={novoNomeLista}
                 onChangeText={setNovoNomeLista}
                 autoFocus
@@ -1080,7 +1081,7 @@ export default function DetalheListaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   header: {
     paddingHorizontal: 16,
@@ -1101,7 +1102,7 @@ const styles = StyleSheet.create({
   headerSyncTexto: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#9B9B9B',
+    color: theme.colors.textPlaceholder,
   },
   backButton: {
     width: 36,
@@ -1111,7 +1112,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 28,
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     lineHeight: 30,
   },
   headerActions: {
@@ -1125,7 +1126,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     textAlign: 'center',
   },
   codigoBanner: {
@@ -1137,21 +1138,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: '#EAF7F1',
+    backgroundColor: theme.colors.primaryLight,
   },
   codigoBannerTexto: {
     fontSize: 13,
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
   },
   codigoBannerCodigo: {
     fontWeight: 'bold',
-    color: '#1D9E75',
+    color: theme.colors.primary,
     letterSpacing: 1,
   },
   codigoBannerRevogar: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#D14343',
+    color: theme.colors.error,
     marginLeft: 12,
   },
   syncBanner: {
@@ -1163,30 +1164,30 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
   },
   syncBannerText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
   totalContainer: {
     marginHorizontal: 24,
     marginBottom: 20,
     padding: 18,
     borderRadius: 18,
-    backgroundColor: '#EAF7F1',
+    backgroundColor: theme.colors.primaryLight,
   },
   totalLabel: {
     fontSize: 13,
-    color: '#1D9E75',
+    color: theme.colors.primary,
     fontWeight: '600',
     marginBottom: 4,
   },
   totalValue: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
   },
   emptyContainer: {
     flex: 1,
@@ -1196,7 +1197,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -1223,37 +1224,33 @@ const styles = StyleSheet.create({
   cabecalhoCompradosTexto: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#9B9B9B',
+    color: theme.colors.textPlaceholder,
   },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
     borderRadius: 18,
     paddingVertical: 16,
     paddingHorizontal: 16,
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    ...theme.shadow.card,
   },
   checkbox: {
     width: 26,
     height: 26,
     borderRadius: 13,
     borderWidth: 2,
-    borderColor: '#1D9E75',
+    borderColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
   checkboxChecked: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
   },
   checkboxIcon: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -1267,7 +1264,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     marginRight: 14,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -1281,12 +1278,12 @@ const styles = StyleSheet.create({
   itemNome: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     marginBottom: 3,
   },
   itemDetalhe: {
     fontSize: 13,
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
   itemSincronizandoSlot: {
     height: 15,
@@ -1294,16 +1291,16 @@ const styles = StyleSheet.create({
   },
   itemSincronizandoTexto: {
     fontSize: 11,
-    color: '#9B9B9B',
+    color: theme.colors.textPlaceholder,
   },
   itemTextComprado: {
     textDecorationLine: 'line-through',
-    color: '#B0B0B0',
+    color: theme.colors.textDisabled,
   },
   itemPreco: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     marginLeft: 12,
   },
   fab: {
@@ -1312,23 +1309,19 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    ...theme.shadow.fab,
   },
   fabIcon: {
     fontSize: 32,
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     lineHeight: 34,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -1336,24 +1329,24 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     maxHeight: '85%',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
     borderRadius: 20,
     padding: 24,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     marginBottom: 18,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     marginBottom: 14,
   },
   searchResultsList: {
@@ -1365,14 +1358,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: theme.colors.backgroundMuted,
   },
   searchResultIconBox: {
     width: 40,
     height: 40,
     borderRadius: 10,
     marginRight: 12,
-    backgroundColor: '#EAF7F1',
+    backgroundColor: theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1385,11 +1378,11 @@ const styles = StyleSheet.create({
   searchResultNome: {
     flex: 1,
     fontSize: 15,
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
   },
   searchResultCategoria: {
     fontSize: 12,
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   manualLink: {
@@ -1400,7 +1393,7 @@ const styles = StyleSheet.create({
   manualLinkText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1D9E75',
+    color: theme.colors.primary,
   },
   formHeader: {
     flexDirection: 'row',
@@ -1414,7 +1407,7 @@ const styles = StyleSheet.create({
   formBackText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1D9E75',
+    color: theme.colors.primary,
     width: 60,
   },
   formImagePreviewBox: {
@@ -1423,7 +1416,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignSelf: 'center',
     marginBottom: 16,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -1434,7 +1427,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   stepperRow: {
@@ -1446,19 +1439,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperButtonText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
   },
   stepperValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1D1D1D',
+    color: theme.colors.textPrimary,
     marginHorizontal: 24,
     minWidth: 24,
     textAlign: 'center',
@@ -1473,18 +1466,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
   },
   unidadeChipAtiva: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
   },
   unidadeChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
   unidadeChipTextAtiva: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
   },
   modalActions: {
     flexDirection: 'row',
@@ -1504,27 +1497,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   modalButtonCancel: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.backgroundMuted,
   },
   modalButtonConfirm: {
-    backgroundColor: '#1D9E75',
+    backgroundColor: theme.colors.primary,
   },
   modalButtonDestructive: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: theme.colors.errorLight,
   },
   modalButtonCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
   modalButtonConfirmText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
   },
   modalButtonDestructiveText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#D14343',
+    color: theme.colors.error,
   },
 });

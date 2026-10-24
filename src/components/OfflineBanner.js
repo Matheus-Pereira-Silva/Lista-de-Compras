@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import theme from '../theme';
+
 // Altura fixa só da linha de texto — a folga da área segura (insets.top)
 // é somada por quem monta este componente (AppNavigator), não por ele.
 export const OFFLINE_BANNER_HEIGHT = 28;
@@ -21,13 +23,13 @@ export default function OfflineBanner() {
 const styles = StyleSheet.create({
   container: {
     height: OFFLINE_BANNER_HEIGHT,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: theme.colors.track,
     alignItems: 'center',
     justifyContent: 'center',
   },
   texto: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B6B6B',
+    color: theme.colors.textSecondary,
   },
 });
