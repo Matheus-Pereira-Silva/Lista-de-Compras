@@ -366,9 +366,11 @@ export default function DetalheListaScreen() {
   // Baseado no status real (sem o atraso da transição) — o total some um
   // item da conta na hora que ele é marcado, mesmo antes de ele subir de
   // grupo visualmente.
-  const totalEstimado = itens
-    .filter((item) => item.status !== 'comprado' && typeof item.preco === 'number')
-    .reduce((total, item) => total + item.preco, 0);
+  const itensPendentesComPreco = itens.filter(
+    (item) => item.status !== 'comprado' && typeof item.preco === 'number'
+  );
+  const totalEstimado = itensPendentesComPreco.reduce((total, item) => total + item.preco, 0);
+  const temItemPendenteComPreco = itensPendentesComPreco.length > 0;
 
   const temItensPendentes = itens.some((item) => item.pendenteSincronizacao);
   const temItensPendentesDebounced = useDebouncedTrue(temItensPendentes, 400);
@@ -782,8 +784,10 @@ export default function DetalheListaScreen() {
         <Text style={styles.totalLabel}>Total estimado (pendentes)</Text>
         {loading ? (
           <SkeletonBlock width={120} height={26} borderRadius={6} />
-        ) : (
+        ) : temItemPendenteComPreco ? (
           <Text style={styles.totalValue}>{formatarPreco(totalEstimado)}</Text>
+        ) : (
+          <Text style={styles.totalValueVazio}>Adicione preços para ver o total estimado</Text>
         )}
       </View>
 
@@ -1235,6 +1239,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: theme.colors.textPrimary,
+  },
+  totalValueVazio: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
