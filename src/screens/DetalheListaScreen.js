@@ -259,6 +259,10 @@ export default function DetalheListaScreen() {
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
+  // Horário do último snapshot confirmado pelo servidor (não do cache
+  // local) — usado só pelo selo de status pra mostrar "há quanto tempo"
+  // quando offline.
+  const [ultimaSincronizacaoServidor, setUltimaSincronizacaoServidor] = useState(null);
 
   const [listaAtual, setListaAtual] = useState(null);
   const [erroListaAtual, setErroListaAtual] = useState(null);
@@ -335,6 +339,9 @@ export default function DetalheListaScreen() {
         setItens(dados);
         setErroCarregamento(null);
         setLoading(false);
+        if (!snapshot.metadata.fromCache) {
+          setUltimaSincronizacaoServidor(Date.now());
+        }
       },
       (error) => {
         // Sem esse callback, um erro do onSnapshot (ex: regras do Firestore
@@ -791,6 +798,7 @@ export default function DetalheListaScreen() {
           offline={offline}
           pendente={temItensPendentes}
           carregando={loading}
+          ultimaSincronizacao={ultimaSincronizacaoServidor}
           style={styles.headerSyncLinha}
         />
       </View>

@@ -14,8 +14,8 @@ const CORES = {
 // estado de sincronização. Substitui a faixa "Alterações pendentes" e o
 // banner global de offline. Altura sempre reservada (ver PersistentFade);
 // só a opacidade alterna entre estados, nunca o espaço ocupado.
-export default function StatusSync({ offline, pendente, carregando, style }) {
-  const { estado, texto } = useStatusSync({ offline, pendente, carregando });
+export default function StatusSync({ offline, pendente, carregando, ultimaSincronizacao, style }) {
+  const { estado, texto } = useStatusSync({ offline, pendente, carregando, ultimaSincronizacao });
   const visivel = estado != null;
   const cor = CORES[estado] || theme.colors.primary;
 

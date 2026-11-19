@@ -182,6 +182,10 @@ export default function MinhasListasScreen() {
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+  // Horário do último snapshot confirmado pelo servidor (não do cache
+  // local) — usado só pelo selo de status pra mostrar "há quanto tempo"
+  // quando offline.
+  const [ultimaSincronizacaoServidor, setUltimaSincronizacaoServidor] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [novaListaNome, setNovaListaNome] = useState('');
 
@@ -219,6 +223,9 @@ export default function MinhasListasScreen() {
         setListas(dados);
         setErro(null);
         setLoading(false);
+        if (!snapshot.metadata.fromCache) {
+          setUltimaSincronizacaoServidor(Date.now());
+        }
       },
       (error) => {
         // Sem esse callback, um erro do onSnapshot (ex: regras do Firestore
@@ -309,6 +316,7 @@ export default function MinhasListasScreen() {
           offline={offline}
           pendente={temListasPendentes}
           carregando={loading}
+          ultimaSincronizacao={ultimaSincronizacaoServidor}
           style={styles.headerSyncLinha}
         />
       </View>
