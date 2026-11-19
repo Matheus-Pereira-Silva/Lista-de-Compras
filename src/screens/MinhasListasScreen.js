@@ -28,6 +28,7 @@ import { useOffline } from '../hooks/useOffline';
 import theme from '../theme';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
+import StatusSync from '../components/StatusSync';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 const QUANTIDADE_CARDS_SKELETON = 4;
@@ -175,8 +176,6 @@ function ListaCard({ lista, onPress }) {
 export default function MinhasListasScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  // Enquanto a faixa global de offline está montada, ela já soma
-  // insets.top (ver AppNavigator) — não soma de novo aqui.
   const offline = useOffline();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -238,7 +237,6 @@ export default function MinhasListasScreen() {
   }, []);
 
   const temListasPendentes = listas.some((lista) => lista.pendenteSincronizacao);
-  const temListasPendentesDebounced = useDebouncedTrue(temListasPendentes, 400);
 
   const abrirModal = () => {
     setNovaListaNome('');
@@ -282,31 +280,35 @@ export default function MinhasListasScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: (offline ? 0 : insets.top) + 16 }]}>
-        <Text style={styles.title}>Minhas Listas</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={() => navigation.navigate('Configuracoes')}
-            activeOpacity={0.8}
-            accessibilityLabel="Configurações"
-          >
-            <Ionicons name="settings-outline" size={22} color={theme.colors.textPrimary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.logoutText}>Sair</Text>
-          </TouchableOpacity>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.title}>Minhas Listas</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={() => navigation.navigate('Configuracoes')}
+              activeOpacity={0.8}
+              accessibilityLabel="Configurações"
+            >
+              <Ionicons name="settings-outline" size={22} color={theme.colors.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.logoutText}>Sair</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <PersistentFade visible={temListasPendentesDebounced} style={styles.syncBanner}>
-        <Ionicons name="cloud-outline" size={14} color={theme.colors.textSecondary} />
-        <Text style={styles.syncBannerText}> Alterações pendentes de sincronização</Text>
-      </PersistentFade>
+        <StatusSync
+          offline={offline}
+          pendente={temListasPendentes}
+          carregando={loading}
+          style={styles.headerSyncLinha}
+        />
+      </View>
 
       {loading ? (
         <View style={styles.listContent}>
@@ -428,11 +430,20 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.lg,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.xl,
-    paddingBottom: theme.spacing.lg,
+  },
+  // Altura pequena e fixa — só a opacidade alterna, nunca o espaço
+  // ocupado, pra não deixar buraco quando não há pendência.
+  headerSyncLinha: {
+    height: 18,
+    marginTop: theme.spacing.xs,
+    paddingHorizontal: 2,
   },
   title: {
     ...theme.typography.heading,
@@ -459,21 +470,6 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
-  },
-  syncBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: theme.spacing.xl,
-    marginBottom: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: 14,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.backgroundMuted,
-  },
-  syncBannerText: {
-    ...theme.typography.label,
     color: theme.colors.textSecondary,
   },
   emptyContainer: {

@@ -5,13 +5,10 @@ import {
   createNavigationContainerRef,
 } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
 
 import { auth } from '../services/firebase';
-import { useOffline } from '../hooks/useOffline';
 import theme from '../theme';
-import OfflineBanner from '../components/OfflineBanner';
 import LoginScreen from '../screens/LoginScreen';
 import MinhasListasScreen from '../screens/MinhasListasScreen';
 import DetalheListaScreen from '../screens/DetalheListaScreen';
@@ -34,8 +31,6 @@ export default function AppNavigator() {
   const [user, setUser] = useState(null);
   const isFirstAuthCallback = useRef(true);
   const codigoPendenteRef = useRef(null);
-  const insets = useSafeAreaInsets();
-  const offline = useOffline();
 
   // Só navega pro código pendente quando já estiver logado E a navegação
   // já tiver montado — senão guarda e tenta de novo depois (ver efeitos
@@ -105,15 +100,6 @@ export default function AppNavigator() {
 
   return (
     <View style={styles.rootContainer}>
-      {/* Montada/desmontada de verdade (não só opacidade) — por isso soma
-          insets.top aqui, uma única vez: enquanto ela existe, as telas
-          abaixo não devem somar insets.top de novo no próprio cabeçalho
-          (ver `offline` usado em MinhasListas/DetalheLista/Configuracoes). */}
-      {offline && (
-        <View style={{ paddingTop: insets.top }}>
-          <OfflineBanner />
-        </View>
-      )}
       <View style={styles.navigatorContainer}>
         <NavigationContainer ref={navigationRef}>
           <Stack.Navigator

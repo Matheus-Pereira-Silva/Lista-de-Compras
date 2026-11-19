@@ -46,6 +46,7 @@ import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
+import StatusSync from '../components/StatusSync';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabled) {
@@ -243,8 +244,6 @@ export default function DetalheListaScreen() {
   const route = useRoute();
   const { listaId, listaNome } = route.params || {};
   const insets = useSafeAreaInsets();
-  // Enquanto a faixa global de offline está montada, ela já soma
-  // insets.top (ver AppNavigator) — não soma de novo aqui.
   const offline = useOffline();
   const showToast = useToast();
 
@@ -378,7 +377,6 @@ export default function DetalheListaScreen() {
   const temItemPendenteComPreco = itensPendentesComPreco.length > 0;
 
   const temItensPendentes = itens.some((item) => item.pendenteSincronizacao);
-  const temItensPendentesDebounced = useDebouncedTrue(temItensPendentes, 400);
 
   const itensOrdenados = useMemo(
     () => ordenarItens(itens, idsTransicionando),
@@ -724,7 +722,7 @@ export default function DetalheListaScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: (offline ? 0 : insets.top) + 16 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerTopRow}>
           <TouchableOpacity
             style={styles.backButton}
@@ -768,17 +766,12 @@ export default function DetalheListaScreen() {
           </View>
         </View>
 
-        {/* Linha fina, sem pill — só alterna opacidade (altura sempre a
-            mesma), pra não deixar buraco no espaçamento quando não há
-            pendência nem gerar salto quando aparece. */}
-        <PersistentFade
-          visible={temItensPendentesDebounced}
-          slide={false}
-          style={[styles.headerSyncLinha, styles.linhaComIcone]}
-        >
-          <Ionicons name="cloud-outline" size={12} color={theme.colors.textSecondary} />
-          <Text style={styles.headerSyncTexto}> Alterações pendentes de sincronização</Text>
-        </PersistentFade>
+        <StatusSync
+          offline={offline}
+          pendente={temItensPendentes}
+          carregando={loading}
+          style={styles.headerSyncLinha}
+        />
       </View>
 
       {erroListaAtual && (
@@ -1187,14 +1180,9 @@ const styles = StyleSheet.create({
   // Altura pequena e fixa — só a opacidade alterna, nunca o espaço
   // ocupado, pra não deixar buraco quando não há pendência.
   headerSyncLinha: {
-    height: 16,
+    height: 18,
     marginTop: 2,
     paddingHorizontal: 4,
-  },
-  headerSyncTexto: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
   },
   backButton: {
     width: 44,

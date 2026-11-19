@@ -22,6 +22,12 @@ const colors = {
   error: '#D14343',
   errorLight: '#FDECEC',
   errorBorder: '#F7D4D4',
+
+  // Selo de status de sincronização: âmbar (sincronizando) e vermelho
+  // suave (offline) — mais discretos que o `error` usado em ações
+  // destrutivas, pra não parecer um alerta de erro de verdade.
+  warning: '#A5650A',
+  offlineSoft: '#B2473C',
 };
 
 const spacing = {

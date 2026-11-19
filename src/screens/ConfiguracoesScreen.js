@@ -36,8 +36,9 @@ import theme from '../theme';
 export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  // Enquanto a faixa global de offline está montada, ela já soma
-  // insets.top (ver AppNavigator) — não soma de novo aqui.
+  // Usado pra bloquear a exclusão de conta sem internet, de forma
+  // proativa (o NetInfo.fetch() em excluirConta continua como segunda
+  // checagem, caso a conexão caia entre habilitar o botão e tocar nele).
   const offline = useOffline();
 
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
@@ -122,7 +123,7 @@ export default function ConfiguracoesScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
-      <View style={[styles.header, { paddingTop: (offline ? 0 : insets.top) + 16 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -155,11 +156,14 @@ export default function ConfiguracoesScreen() {
 
           {!mostrarConfirmacao ? (
             <TouchableOpacity
-              style={styles.dangerButton}
+              style={[styles.dangerButton, offline && styles.dangerButtonDisabled]}
               onPress={abrirConfirmacao}
+              disabled={offline}
               activeOpacity={0.8}
             >
-              <Text style={styles.dangerButtonText}>Excluir minha conta</Text>
+              <Text style={styles.dangerButtonText}>
+                {offline ? 'Conecte-se à internet para excluir' : 'Excluir minha conta'}
+              </Text>
             </TouchableOpacity>
           ) : (
             <>
@@ -270,6 +274,9 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dangerButtonDisabled: {
+    opacity: 0.5,
   },
   dangerButtonText: {
     color: theme.colors.textOnPrimary,
