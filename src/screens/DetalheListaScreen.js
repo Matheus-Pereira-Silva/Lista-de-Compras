@@ -247,6 +247,15 @@ export default function DetalheListaScreen() {
   const offline = useOffline();
   const showToast = useToast();
 
+  // Escritas no Firestore feitas sem await (Optimistic UI) aplicam na
+  // hora no cache local, mas podem ser recusadas ao sincronizar de
+  // verdade (ex: acesso à lista revogado enquanto offline) — sem isso, a
+  // mudança local simplesmente some sem explicação nenhuma.
+  const avisarFalhaSincronizacao = (contexto) => (error) => {
+    console.error(contexto, error);
+    showToast('Não foi possível sincronizar uma alteração.');
+  };
+
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
@@ -504,9 +513,9 @@ export default function DetalheListaScreen() {
     // hora (Optimistic UI) e sincroniza em segundo plano. Offline, essa
     // promise só resolveria quando a rede voltasse — esperar por ela aqui
     // deixaria o modal preso em "Salvando..." indefinidamente.
-    addDoc(collection(db, 'listas', listaId, 'itens'), novoItem).catch((error) => {
-      console.error('Erro ao criar item:', error);
-    });
+    addDoc(collection(db, 'listas', listaId, 'itens'), novoItem).catch(
+      avisarFalhaSincronizacao('Erro ao criar item:')
+    );
   };
 
   const editarItem = () => {
@@ -526,7 +535,7 @@ export default function DetalheListaScreen() {
     };
 
     updateDoc(doc(db, 'listas', listaId, 'itens', itemEditando.id), dadosAtualizados).catch(
-      (error) => console.error('Erro ao editar item:', error)
+      avisarFalhaSincronizacao('Erro ao editar item:')
     );
   };
 
@@ -546,11 +555,23 @@ export default function DetalheListaScreen() {
       textoConfirmar: 'Excluir',
       destrutivo: true,
       onConfirmar: () => {
-        deleteDoc(doc(db, 'listas', listaId, 'itens', item.id)).catch((error) =>
-          console.error('Erro ao excluir item:', error)
+        // pendenteSincronizacao é um campo que a tela acrescenta na
+        // leitura (metadata.hasPendingWrites) — não existe no Firestore,
+        // então não entra de volta no desfazer.
+        const { id, pendenteSincronizacao, ...dadosParaRestaurar } = item;
+
+        deleteDoc(doc(db, 'listas', listaId, 'itens', id)).catch(
+          avisarFalhaSincronizacao('Erro ao excluir item:')
         );
         fecharModal();
-        showToast('Item removido');
+        showToast('Item removido', {
+          actionLabel: 'Desfazer',
+          onAction: () => {
+            setDoc(doc(db, 'listas', listaId, 'itens', id), dadosParaRestaurar).catch(
+              avisarFalhaSincronizacao('Erro ao desfazer exclusão do item:')
+            );
+          },
+        });
       },
     });
   };
@@ -594,7 +615,7 @@ export default function DetalheListaScreen() {
         status: novoStatus,
       });
     } catch (error) {
-      console.error('Erro ao atualizar item:', error);
+      avisarFalhaSincronizacao('Erro ao atualizar item:')(error);
     }
   };
 
@@ -609,10 +630,10 @@ export default function DetalheListaScreen() {
         listaId,
         criadoPor: auth.currentUser.uid,
         criadoEm: serverTimestamp(),
-      }).catch((error) => console.error('Erro ao criar convite:', error));
+      }).catch(avisarFalhaSincronizacao('Erro ao criar convite:'));
 
-      updateDoc(doc(db, 'listas', listaId), { codigoConvite: codigo }).catch((error) =>
-        console.error('Erro ao salvar código de convite na lista:', error)
+      updateDoc(doc(db, 'listas', listaId), { codigoConvite: codigo }).catch(
+        avisarFalhaSincronizacao('Erro ao salvar código de convite na lista:')
       );
     }
 
@@ -641,11 +662,11 @@ export default function DetalheListaScreen() {
       textoConfirmar: 'Revogar',
       destrutivo: true,
       onConfirmar: () => {
-        deleteDoc(doc(db, 'convites', codigo)).catch((error) =>
-          console.error('Erro ao revogar convite:', error)
+        deleteDoc(doc(db, 'convites', codigo)).catch(
+          avisarFalhaSincronizacao('Erro ao revogar convite:')
         );
         updateDoc(doc(db, 'listas', listaId), { codigoConvite: deleteField() }).catch(
-          (error) => console.error('Erro ao limpar código de convite:', error)
+          avisarFalhaSincronizacao('Erro ao limpar código de convite:')
         );
       },
     });
@@ -660,7 +681,7 @@ export default function DetalheListaScreen() {
       onConfirmar: () => {
         updateDoc(doc(db, 'listas', listaId), {
           membros: arrayRemove(auth.currentUser.uid),
-        }).catch((error) => console.error('Erro ao sair da lista:', error));
+        }).catch(avisarFalhaSincronizacao('Erro ao sair da lista:'));
         navigation.goBack();
         showToast('Você saiu da lista');
       },
@@ -680,8 +701,8 @@ export default function DetalheListaScreen() {
     const nomeTrim = novoNomeLista.trim();
     if (!nomeTrim) return;
 
-    updateDoc(doc(db, 'listas', listaId), { nome: nomeTrim }).catch((error) =>
-      console.error('Erro ao renomear lista:', error)
+    updateDoc(doc(db, 'listas', listaId), { nome: nomeTrim }).catch(
+      avisarFalhaSincronizacao('Erro ao renomear lista:')
     );
     fecharRenomearLista();
     showToast('Lista renomeada');
@@ -705,7 +726,7 @@ export default function DetalheListaScreen() {
           batch.delete(doc(db, 'convites', listaAtual.codigoConvite));
         }
         batch.delete(doc(db, 'listas', listaId));
-        batch.commit().catch((error) => console.error('Erro ao excluir lista:', error));
+        batch.commit().catch(avisarFalhaSincronizacao('Erro ao excluir lista:'));
         navigation.goBack();
       },
     });

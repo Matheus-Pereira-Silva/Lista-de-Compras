@@ -29,6 +29,7 @@ import theme from '../theme';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import StatusSync from '../components/StatusSync';
+import { useToast } from '../components/Toast';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 const QUANTIDADE_CARDS_SKELETON = 4;
@@ -177,6 +178,7 @@ export default function MinhasListasScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const offline = useOffline();
+  const showToast = useToast();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -262,6 +264,7 @@ export default function MinhasListasScreen() {
       criadoEm: serverTimestamp(),
     }).catch((error) => {
       console.error('Erro ao criar lista:', error);
+      showToast('Não foi possível sincronizar uma alteração.');
     });
 
     fecharModal();
