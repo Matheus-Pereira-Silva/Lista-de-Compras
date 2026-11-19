@@ -774,122 +774,130 @@ export default function DetalheListaScreen() {
         />
       </View>
 
-      {erroListaAtual && (
-        <View style={styles.syncBanner}>
-          <Text style={styles.syncBannerText}>{erroListaAtual}</Text>
-        </View>
-      )}
-
-      {ehDono && listaAtual?.codigoConvite && (
-        <View style={styles.codigoBanner}>
-          <Text style={styles.codigoBannerTexto}>
-            Código de convite: <Text style={styles.codigoBannerCodigo}>{listaAtual.codigoConvite}</Text>
-          </Text>
-          <View style={styles.codigoBannerAcoes}>
-            <TouchableOpacity
-              onPress={copiarCodigo}
-              activeOpacity={0.7}
-              style={styles.codigoBannerCopiar}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              accessibilityLabel="Copiar código"
-            >
-              <Ionicons name="copy-outline" size={16} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={revogarConvite}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.codigoBannerRevogar}>Revogar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalLabel}>Total estimado (pendentes)</Text>
+      <View style={styles.totalBar}>
         {loading ? (
-          <SkeletonBlock width={120} height={26} borderRadius={6} />
+          <SkeletonBlock width={160} height={14} borderRadius={4} />
         ) : temItemPendenteComPreco ? (
-          <Text style={styles.totalValue}>{formatarPreco(totalEstimado)}</Text>
+          <Text style={styles.totalBarTexto}>
+            Total estimado: <Text style={styles.totalBarValor}>{formatarPreco(totalEstimado)}</Text>
+          </Text>
         ) : (
-          <Text style={styles.totalValueVazio}>Adicione preços para ver o total estimado</Text>
+          <Text style={styles.totalBarVazio}>Adicione preços para ver o total</Text>
         )}
       </View>
 
-      {loading ? (
-        <View style={styles.listContent}>
-          {Array.from({ length: QUANTIDADE_ITENS_SKELETON }).map((_, indice) => (
-            <View key={indice} style={styles.itemCard}>
-              <SkeletonBlock
-                width={26}
-                height={26}
-                borderRadius={13}
-                style={styles.skeletonCheckbox}
-              />
-              <SkeletonBlock
-                width={44}
-                height={44}
-                borderRadius={12}
-                style={styles.skeletonImagem}
-              />
-              <View style={styles.itemInfo}>
-                <SkeletonBlock
-                  width="70%"
-                  height={16}
-                  borderRadius={4}
-                  style={styles.skeletonNome}
-                />
-                <SkeletonBlock width="40%" height={12} borderRadius={4} />
+      <View style={styles.listaContainer}>
+        <FlatList
+          data={loading || erroCarregamento ? [] : linhasLista}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            erroListaAtual || (ehDono && listaAtual?.codigoConvite) ? (
+              <>
+                {erroListaAtual && (
+                  <View style={styles.syncBanner}>
+                    <Text style={styles.syncBannerText}>{erroListaAtual}</Text>
+                  </View>
+                )}
+
+                {ehDono && listaAtual?.codigoConvite && (
+                  <View style={styles.codigoBanner}>
+                    <Text style={styles.codigoBannerTexto}>
+                      Código de convite:{' '}
+                      <Text style={styles.codigoBannerCodigo}>{listaAtual.codigoConvite}</Text>
+                    </Text>
+                    <View style={styles.codigoBannerAcoes}>
+                      <TouchableOpacity
+                        onPress={copiarCodigo}
+                        activeOpacity={0.7}
+                        style={styles.codigoBannerCopiar}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        accessibilityLabel="Copiar código"
+                      >
+                        <Ionicons name="copy-outline" size={16} color={theme.colors.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={revogarConvite}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Text style={styles.codigoBannerRevogar}>Revogar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </>
+            ) : null
+          }
+          ListEmptyComponent={
+            loading ? (
+              <View>
+                {Array.from({ length: QUANTIDADE_ITENS_SKELETON }).map((_, indice) => (
+                  <View key={indice} style={styles.itemCard}>
+                    <SkeletonBlock
+                      width={26}
+                      height={26}
+                      borderRadius={13}
+                      style={styles.skeletonCheckbox}
+                    />
+                    <SkeletonBlock
+                      width={44}
+                      height={44}
+                      borderRadius={12}
+                      style={styles.skeletonImagem}
+                    />
+                    <View style={styles.itemInfo}>
+                      <SkeletonBlock
+                        width="70%"
+                        height={16}
+                        borderRadius={4}
+                        style={styles.skeletonNome}
+                      />
+                      <SkeletonBlock width="40%" height={12} borderRadius={4} />
+                    </View>
+                  </View>
+                ))}
               </View>
-            </View>
-          ))}
-        </View>
-      ) : erroCarregamento ? (
-        <FadeInView style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{erroCarregamento}</Text>
-        </FadeInView>
-      ) : itens.length === 0 ? (
-        <FadeInView style={styles.emptyContainer}>
-          <View style={styles.emptyIconBox}>
-            <Ionicons name="basket-outline" size={36} color={theme.colors.primary} />
-          </View>
-          <Text style={styles.emptyTitle}>Sua lista está vazia</Text>
-          <Text style={styles.emptyText}>Adicione o primeiro item para começar.</Text>
-          <TouchableOpacity style={styles.emptyButton} onPress={abrirModal} activeOpacity={0.8}>
-            <Text style={styles.emptyButtonText}>Adicionar item</Text>
-          </TouchableOpacity>
-        </FadeInView>
-      ) : (
-        <FadeInView style={styles.listaContainer}>
-          <FlatList
-            data={linhasLista}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) =>
-              item.__tipo === 'cabecalhoComprados' ? (
-                <TouchableOpacity
-                  onPress={alternarMostrarComprados}
-                  activeOpacity={0.7}
-                  style={[styles.cabecalhoComprados, styles.linhaComIcone]}
-                  accessibilityLabel={mostrarComprados ? 'Recolher comprados' : 'Expandir comprados'}
-                >
-                  <Ionicons
-                    name={mostrarComprados ? 'chevron-down' : 'chevron-forward'}
-                    size={14}
-                    color={theme.colors.textSecondary}
-                  />
-                  <Text style={styles.cabecalhoCompradosTexto}>
-                    {' '}Comprados ({totalComprados})
-                  </Text>
+            ) : erroCarregamento ? (
+              <FadeInView style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{erroCarregamento}</Text>
+              </FadeInView>
+            ) : (
+              <FadeInView style={styles.emptyContainer}>
+                <View style={styles.emptyIconBox}>
+                  <Ionicons name="basket-outline" size={36} color={theme.colors.primary} />
+                </View>
+                <Text style={styles.emptyTitle}>Sua lista está vazia</Text>
+                <Text style={styles.emptyText}>Adicione o primeiro item para começar.</Text>
+                <TouchableOpacity style={styles.emptyButton} onPress={abrirModal} activeOpacity={0.8}>
+                  <Text style={styles.emptyButtonText}>Adicionar item</Text>
                 </TouchableOpacity>
-              ) : (
-                <ItemCard item={item} onAlternarStatus={alternarStatus} onEditar={abrirEdicaoItem} />
-              )
-            }
-          />
-        </FadeInView>
-      )}
+              </FadeInView>
+            )
+          }
+          renderItem={({ item }) =>
+            item.__tipo === 'cabecalhoComprados' ? (
+              <TouchableOpacity
+                onPress={alternarMostrarComprados}
+                activeOpacity={0.7}
+                style={[styles.cabecalhoComprados, styles.linhaComIcone]}
+                accessibilityLabel={mostrarComprados ? 'Recolher comprados' : 'Expandir comprados'}
+              >
+                <Ionicons
+                  name={mostrarComprados ? 'chevron-down' : 'chevron-forward'}
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.cabecalhoCompradosTexto}>
+                  {' '}Comprados ({totalComprados})
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <ItemCard item={item} onAlternarStatus={alternarStatus} onEditar={abrirEdicaoItem} />
+            )
+          }
+        />
+      </View>
 
       <TouchableOpacity
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
@@ -1205,7 +1213,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: 24,
     marginBottom: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -1241,7 +1248,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 24,
     marginBottom: 12,
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -1253,26 +1259,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.textSecondary,
   },
-  totalContainer: {
-    marginHorizontal: 24,
-    marginBottom: 20,
-    padding: 18,
-    borderRadius: 18,
-    backgroundColor: theme.colors.primaryLight,
+  // Barra fixa de uma linha só (não rola com a lista) — substitui o
+  // card grande de total, que comprimia demais o topo da tela.
+  totalBar: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    minHeight: 36,
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
-  totalLabel: {
+  totalBarTexto: {
     fontSize: 13,
-    color: theme.colors.primary,
-    fontWeight: '600',
-    marginBottom: 4,
+    color: theme.colors.textSecondary,
   },
-  totalValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
+  totalBarValor: {
+    fontSize: 14,
+    fontWeight: '700',
     color: theme.colors.textPrimary,
   },
-  totalValueVazio: {
-    fontSize: 14,
+  totalBarVazio: {
+    fontSize: 12,
     color: theme.colors.textSecondary,
   },
   emptyContainer: {
@@ -1324,6 +1331,10 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 24,
     paddingBottom: 110,
+    // Permite o ListEmptyComponent (skeleton/erro/vazio) centralizar de
+    // verdade quando tem pouco ou nenhum item — sem isso, flex:1 dentro
+    // dele não tem o que preencher.
+    flexGrow: 1,
   },
   skeletonCheckbox: {
     marginRight: 14,
