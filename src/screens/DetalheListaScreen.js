@@ -819,7 +819,13 @@ export default function DetalheListaScreen() {
         <FlatList
           data={loading || erroCarregamento ? [] : linhasLista}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            // Altura do FAB (56) + margem (24) + folga, somado à área
+            // segura real do aparelho — o último item sempre rola até
+            // acima do botão, em qualquer tamanho de gesto/barra.
+            { paddingBottom: 96 + insets.bottom },
+          ]}
           ListHeaderComponent={
             erroListaAtual || (ehDono && listaAtual?.codigoConvite) ? (
               <>
@@ -1219,7 +1225,9 @@ const styles = StyleSheet.create({
   headerSyncLinha: {
     height: 18,
     marginTop: 2,
-    paddingHorizontal: 4,
+    // header usa paddingHorizontal 16; soma 8 aqui pra alinhar o selo
+    // com a margem de 24 da barra de total e dos cards da lista.
+    paddingHorizontal: theme.spacing.sm,
   },
   backButton: {
     width: 44,
@@ -1292,7 +1300,7 @@ const styles = StyleSheet.create({
   // card grande de total, que comprimia demais o topo da tela.
   totalBar: {
     paddingHorizontal: 24,
-    paddingVertical: 10,
+    paddingVertical: theme.spacing.md,
     minHeight: 36,
     justifyContent: 'center',
     borderBottomWidth: 1,
@@ -1359,7 +1367,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 24,
-    paddingBottom: 110,
+    paddingTop: theme.spacing.md,
     // Permite o ListEmptyComponent (skeleton/erro/vazio) centralizar de
     // verdade quando tem pouco ou nenhum item — sem isso, flex:1 dentro
     // dele não tem o que preencher.

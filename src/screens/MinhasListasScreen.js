@@ -322,7 +322,7 @@ export default function MinhasListasScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.listContent}>
+        <View style={[styles.listContent, { paddingBottom: 96 + insets.bottom }]}>
           {Array.from({ length: QUANTIDADE_CARDS_SKELETON }).map((_, indice) => (
             <View key={indice} style={styles.card}>
               <SkeletonBlock
@@ -364,7 +364,12 @@ export default function MinhasListasScreen() {
           <FlatList
             data={listas}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[
+              styles.listContent,
+              // Altura do FAB principal (56) + margem (24) + folga,
+              // somado à área segura real do aparelho.
+              { paddingBottom: 96 + insets.bottom },
+            ]}
             renderItem={({ item }) => <ListaCard lista={item} onPress={abrirLista} />}
           />
         </FadeInView>
@@ -454,7 +459,8 @@ const styles = StyleSheet.create({
   headerSyncLinha: {
     height: 18,
     marginTop: theme.spacing.xs,
-    paddingHorizontal: 2,
+    // header já usa paddingHorizontal theme.spacing.xl (24), igual aos
+    // cards — nenhuma folga extra aqui pra não desalinhar o selo.
   },
   title: {
     ...theme.typography.heading,
@@ -543,7 +549,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: theme.spacing.xl,
-    paddingBottom: 120,
   },
   card: {
     backgroundColor: theme.colors.background,
