@@ -270,6 +270,18 @@ export default function DetalheListaScreen() {
   const { forcarSkeleton } = useTestMode();
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Nº de tentativas de assinar os itens — incrementar refaz o onSnapshot
+  // (ver efeito abaixo). Usado só pra reagir a um permission-denied
+  // causado pela lista ainda não ter chegado ao servidor (ver efeitos a
+  // seguir); nos outros casos, a escuta nunca precisa ser refeita.
+  const [tentativaItens, setTentativaItens] = useState(0);
+  // true enquanto o documento da lista ainda não foi confirmado pelo
+  // servidor — usado pra não tratar um permission-denied nos itens (que
+  // dependem de um get() nesse documento) como erro de verdade.
+  const listaDocPendenteRef = useRef(true);
+  // true quando a última tentativa falhou por isso, e precisa assinar de
+  // novo assim que a lista confirmar.
+  const itensPrecisamRetryRef = useRef(false);
   // Só mostra o skeleton se o carregamento levar mais que isso — evita
   // o "flash" dele quando o cache local resolve quase na hora. O modo
   // de teste pode forçar a exibição mesmo sem carregamento de verdade.
@@ -367,6 +379,21 @@ export default function DetalheListaScreen() {
         // "permission-denied") derrubava o app inteiro sem aviso — foi
         // exatamente isso que causou o crash logo após login/cadastro.
         console.error('Erro ao carregar itens:', error);
+
+        // As regras dos itens fazem get() no documento da lista — se ele
+        // ainda está pendente (lista recém-criada offline/rede lenta/modo
+        // de teste), o servidor nega por não achá-lo ainda, não por falta
+        // de permissão de verdade. Não mostra erro: fica no estado normal
+        // (skeleton ou vazio) e tenta de novo quando a lista confirmar
+        // (ver efeito da lista, abaixo).
+        if (error.code === 'firestore/permission-denied' && listaDocPendenteRef.current) {
+          itensPrecisamRetryRef.current = true;
+          console.log(
+            `Itens: permission-denied com a lista ainda pendente (tentativa ${tentativaItens}) — aguardando confirmação do servidor pra tentar de novo.`
+          );
+          return;
+        }
+
         setErroCarregamento(
           error.code === 'firestore/permission-denied'
             ? 'Sem permissão para acessar os dados.'
@@ -377,17 +404,36 @@ export default function DetalheListaScreen() {
     );
 
     return unsubscribe;
-  }, [listaId]);
+  }, [listaId, tentativaItens]);
 
   // Dados do documento da própria lista (membros, criadoPor, codigoConvite)
   // — necessários pra saber se o usuário é o dono e pra mostrar/reaproveitar
   // o código de convite.
   useEffect(() => {
+    // Reseta a cada lista nova — o efeito dos itens assume pendente por
+    // padrão até o primeiro snapshot daqui dizer o contrário.
+    listaDocPendenteRef.current = true;
+
     const unsubscribe = onSnapshot(
       doc(db, 'listas', listaId),
+      { includeMetadataChanges: true },
       (snapshot) => {
+        const pendenteAntes = listaDocPendenteRef.current;
+        const pendenteAgora = snapshot.metadata.hasPendingWrites;
+        listaDocPendenteRef.current = pendenteAgora;
+
         setListaAtual(snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null);
         setErroListaAtual(null);
+
+        // Lista acabou de ser confirmada pelo servidor (não só por este
+        // snapshot vir do cache) — se os itens ficaram travados num
+        // permission-denied esperando isso, assina de novo agora.
+        const confirmouAgora = pendenteAntes && !pendenteAgora && !snapshot.metadata.fromCache;
+        if (confirmouAgora && itensPrecisamRetryRef.current) {
+          itensPrecisamRetryRef.current = false;
+          console.log('Lista confirmada pelo servidor — assinando os itens de novo.');
+          setTentativaItens((tentativa) => tentativa + 1);
+        }
       },
       (error) => {
         console.error('Erro ao carregar dados da lista:', error);
