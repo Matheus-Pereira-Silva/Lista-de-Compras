@@ -201,16 +201,12 @@ function ItemCard({ item, onAlternarStatus, onEditar }) {
           >
             {item.nome}
           </Text>
-          <Text style={[styles.itemDetalhe, comprado && styles.itemTextComprado]}>
+          <Text style={[styles.itemDetalhe, comprado && styles.itemTextCompradoSemRisco]}>
             {item.quantidade}
             {item.categoria ? (
               <>
                 {'  '}
-                <Ionicons
-                  name="pricetag-outline"
-                  size={11}
-                  color={comprado ? theme.colors.textDisabled : theme.colors.textSecondary}
-                />
+                <Ionicons name="pricetag-outline" size={11} color={theme.colors.textSecondary} />
                 {' ' + item.categoria}
               </>
             ) : (
@@ -230,7 +226,7 @@ function ItemCard({ item, onAlternarStatus, onEditar }) {
         </View>
 
         {typeof item.preco === 'number' && (
-          <Text style={[styles.itemPreco, comprado && styles.itemTextComprado]}>
+          <Text style={[styles.itemPreco, comprado && styles.itemTextCompradoSemRisco]}>
             {formatarPreco(item.preco)}
           </Text>
         )}
@@ -1045,11 +1041,11 @@ export default function DetalheListaScreen() {
                 )}
 
                 <TextInput
-
                   keyboardAppearance="light"
                   style={styles.modalInput}
                   placeholder="Nome do item"
                   placeholderTextColor={theme.colors.textPlaceholder}
+                  autoCapitalize="sentences"
                   value={nome}
                   onChangeText={setNome}
                 />
@@ -1167,6 +1163,7 @@ export default function DetalheListaScreen() {
                 style={styles.modalInput}
                 placeholder="Nome da lista"
                 placeholderTextColor={theme.colors.textPlaceholder}
+                autoCapitalize="sentences"
                 value={novoNomeLista}
                 onChangeText={setNovoNomeLista}
                 autoFocus
@@ -1466,6 +1463,11 @@ const styles = StyleSheet.create({
   itemTextComprado: {
     textDecorationLine: 'line-through',
     color: theme.colors.textDisabled,
+  },
+  // Quantidade, categoria e preço de um item comprado: só esmaecem (com
+  // contraste ainda legível), sem risco — o risco fica só no nome.
+  itemTextCompradoSemRisco: {
+    color: theme.colors.textSecondary,
   },
   itemPreco: {
     fontSize: 15,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -30,6 +30,7 @@ import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import StatusSync from '../components/StatusSync';
 import { useToast } from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
 
 const QUANTIDADE_CARDS_SKELETON = 4;
@@ -46,15 +47,21 @@ function formatarDataCurta(timestamp) {
 
 // Cada card tem seu próprio onSnapshot na subcoleção de itens — funciona
 // offline pelo cache do Firestore e evita um "0 itens" fixo e falso.
-function ListaCard({ lista, onPress }) {
+function ListaCard({ lista, onPress, onPendenteItensChange }) {
   const [itens, setItens] = useState(null); // null = ainda sem nenhum snapshot
   const [erroItens, setErroItens] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'listas', lista.id, 'itens'),
+      { includeMetadataChanges: true },
       (snapshot) => {
-        setItens(snapshot.docs.map((docSnapshot) => docSnapshot.data()));
+        setItens(
+          snapshot.docs.map((docSnapshot) => ({
+            ...docSnapshot.data(),
+            pendenteSincronizacao: docSnapshot.metadata.hasPendingWrites,
+          }))
+        );
         setErroItens(null);
       },
       (error) => {
@@ -72,6 +79,15 @@ function ListaCard({ lista, onPress }) {
 
     return unsubscribe;
   }, [lista.id]);
+
+  const algumItemPendente = itens?.some((item) => item.pendenteSincronizacao) ?? false;
+
+  // Avisa a tela (pra decidir o texto do aviso ao sair da conta) sempre
+  // que esta lista passa a ter, ou deixa de ter, itens pendentes.
+  useEffect(() => {
+    onPendenteItensChange?.(lista.id, algumItemPendente);
+    return () => onPendenteItensChange?.(lista.id, false);
+  }, [lista.id, algumItemPendente, onPendenteItensChange]);
 
   const carregando = itens === null;
   const totalItens = itens?.length ?? 0;
@@ -188,6 +204,18 @@ export default function MinhasListasScreen() {
   const [ultimaSincronizacaoServidor, setUltimaSincronizacaoServidor] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [novaListaNome, setNovaListaNome] = useState('');
+  const [confirmarSairVisible, setConfirmarSairVisible] = useState(false);
+
+  // {[listaId]: boolean} — cada ListaCard reporta se tem itens com
+  // escritas pendentes; usado só pra decidir o aviso ao sair da conta.
+  const [itensPendentesPorLista, setItensPendentesPorLista] = useState({});
+  const handlePendenteItensChange = useCallback((listaId, pendente) => {
+    setItensPendentesPorLista((atual) => {
+      if (!!atual[listaId] === !!pendente) return atual;
+      return { ...atual, [listaId]: pendente };
+    });
+  }, []);
+  const temItensPendentes = Object.values(itensPendentesPorLista).some(Boolean);
 
   useEffect(() => {
     const uid = auth.currentUser?.uid;
@@ -285,6 +313,11 @@ export default function MinhasListasScreen() {
   };
 
   const handleLogout = () => {
+    setConfirmarSairVisible(true);
+  };
+
+  const confirmarSair = () => {
+    setConfirmarSairVisible(false);
     signOut(auth);
   };
 
@@ -370,7 +403,13 @@ export default function MinhasListasScreen() {
               // somado à área segura real do aparelho.
               { paddingBottom: 96 + insets.bottom },
             ]}
-            renderItem={({ item }) => <ListaCard lista={item} onPress={abrirLista} />}
+            renderItem={({ item }) => (
+              <ListaCard
+                lista={item}
+                onPress={abrirLista}
+                onPendenteItensChange={handlePendenteItensChange}
+              />
+            )}
           />
         </FadeInView>
       )}
@@ -411,6 +450,7 @@ export default function MinhasListasScreen() {
                 style={styles.modalInput}
                 placeholder="Nome da lista"
                 placeholderTextColor={theme.colors.textPlaceholder}
+                autoCapitalize="sentences"
                 value={novaListaNome}
                 onChangeText={setNovaListaNome}
                 autoFocus
@@ -436,6 +476,20 @@ export default function MinhasListasScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
+      <ConfirmDialog
+        visible={confirmarSairVisible}
+        title="Sair da conta"
+        message={
+          temItensPendentes
+            ? 'Há alterações ainda não sincronizadas. Elas podem ficar inacessíveis até você entrar de novo.'
+            : 'Você vai precisar entrar de novo para acessar suas listas.'
+        }
+        confirmLabel="Sair"
+        destructive
+        onConfirm={confirmarSair}
+        onCancel={() => setConfirmarSairVisible(false)}
+      />
     </View>
   );
 }
