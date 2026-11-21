@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import {
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   LayoutAnimation,
@@ -45,6 +44,7 @@ import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ActionSheet from '../components/ActionSheet';
 import { useToast } from '../components/Toast';
 import StatusSync from '../components/StatusSync';
 import { useDebouncedTrue } from '../hooks/useDebouncedTrue';
@@ -283,6 +283,8 @@ export default function DetalheListaScreen() {
 
   const [renomeioVisible, setRenomeioVisible] = useState(false);
   const [novoNomeLista, setNovoNomeLista] = useState('');
+
+  const [menuListaVisible, setMenuListaVisible] = useState(false);
 
   // Confirmação genérica (substitui Alert.alert) — guarda os dados da
   // ação pendente; um único <ConfirmDialog> no JSX reflete esse estado.
@@ -763,14 +765,10 @@ export default function DetalheListaScreen() {
     });
   };
 
-  const abrirMenuLista = () => {
-    const opcoes = [{ text: 'Renomear lista', onPress: abrirRenomearLista }];
-    if (ehDono) {
-      opcoes.push({ text: 'Excluir lista', style: 'destructive', onPress: excluirLista });
-    }
-    opcoes.push({ text: 'Cancelar', style: 'cancel' });
-    Alert.alert('Opções da lista', undefined, opcoes);
-  };
+  const opcoesMenuLista = [{ label: 'Renomear lista', onPress: abrirRenomearLista }];
+  if (ehDono) {
+    opcoesMenuLista.push({ label: 'Excluir lista', destructive: true, onPress: excluirLista });
+  }
 
   return (
     <View style={styles.container}>
@@ -809,7 +807,7 @@ export default function DetalheListaScreen() {
             )}
             <TouchableOpacity
               style={styles.backButton}
-              onPress={abrirMenuLista}
+              onPress={() => setMenuListaVisible(true)}
               activeOpacity={0.8}
               accessibilityLabel="Mais opções da lista"
             >
@@ -1233,6 +1231,13 @@ export default function DetalheListaScreen() {
         destructive={confirmacao?.destrutivo}
         onConfirm={confirmarAcao}
         onCancel={fecharConfirmacao}
+      />
+
+      <ActionSheet
+        visible={menuListaVisible}
+        title="Opções da lista"
+        options={opcoesMenuLista}
+        onClose={() => setMenuListaVisible(false)}
       />
     </View>
   );
