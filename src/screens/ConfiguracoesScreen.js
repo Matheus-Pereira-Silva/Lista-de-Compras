@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -21,7 +22,9 @@ import {
 import {
   arrayRemove,
   collection,
+  disableNetwork,
   doc,
+  enableNetwork,
   getDocs,
   query,
   updateDoc,
@@ -32,6 +35,11 @@ import {
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
 import theme from '../theme';
+
+// Módulo (não AsyncStorage): sobrevive à tela sendo desmontada ao
+// navegar pra outro lugar e voltar, mas sempre volta a `false` quando o
+// processo JS reinicia — ou seja, quando o app é fechado de verdade.
+let simulacaoFalhaAtiva = false;
 
 export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
@@ -45,6 +53,23 @@ export default function ConfiguracoesScreen() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [simulandoFalha, setSimulandoFalha] = useState(simulacaoFalhaAtiva);
+
+  // Só pra teste: derruba (ou restaura) o acesso do Firestore ao
+  // servidor sem desligar o Wi-Fi/dados do aparelho — assim dá pra ver
+  // o selo de status reagir a uma falha de sincronização de verdade.
+  const alternarSimulacaoFalha = (valor) => {
+    simulacaoFalhaAtiva = valor;
+    setSimulandoFalha(valor);
+
+    if (valor) {
+      disableNetwork(db).catch((error) =>
+        console.error('Erro ao simular falha de conexão:', error)
+      );
+    } else {
+      enableNetwork(db).catch((error) => console.error('Erro ao restaurar conexão:', error));
+    }
+  };
 
   const abrirConfirmacao = () => {
     setSenha('');
@@ -206,6 +231,25 @@ export default function ConfiguracoesScreen() {
             </>
           )}
         </View>
+
+        {process.env.EXPO_PUBLIC_MODO_TESTE === 'true' && (
+          <View style={styles.testCard}>
+            <Text style={styles.testTitle}>Modo de teste</Text>
+            <Text style={styles.testText}>
+              Painel visível só em builds de teste, pra ajudar a testar o app. Não
+              aparece pra usuários finais.
+            </Text>
+            <View style={styles.testRow}>
+              <Text style={styles.testLabel}>Simular falha de conexão com o servidor</Text>
+              <Switch
+                value={simulandoFalha}
+                onValueChange={alternarSimulacaoFalha}
+                trackColor={{ false: theme.colors.border, true: theme.colors.warning }}
+                thumbColor={theme.colors.background}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -322,5 +366,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: theme.colors.textSecondary,
+  },
+  testCard: {
+    marginTop: theme.spacing.xl,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl - 6,
+    backgroundColor: theme.colors.backgroundMuted,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  testTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.warning,
+    marginBottom: theme.spacing.sm,
+  },
+  testText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    lineHeight: 19,
+    marginBottom: theme.spacing.lg,
+  },
+  testRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+  },
+  testLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
   },
 });
