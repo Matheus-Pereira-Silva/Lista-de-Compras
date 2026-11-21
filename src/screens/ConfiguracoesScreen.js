@@ -34,6 +34,7 @@ import {
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
+import { useTestMode } from '../hooks/useTestMode';
 import theme from '../theme';
 
 // Módulo (não AsyncStorage): sobrevive à tela sendo desmontada ao
@@ -48,6 +49,7 @@ export default function ConfiguracoesScreen() {
   // proativa (o NetInfo.fetch() em excluirConta continua como segunda
   // checagem, caso a conexão caia entre habilitar o botão e tocar nele).
   const offline = useOffline();
+  const { forcarSkeleton, setForcarSkeleton } = useTestMode();
 
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const [senha, setSenha] = useState('');
@@ -248,6 +250,16 @@ export default function ConfiguracoesScreen() {
                 thumbColor={theme.colors.background}
               />
             </View>
+
+            <View style={[styles.testRow, styles.testRowComBorda]}>
+              <Text style={styles.testLabel}>Forçar skeleton de carregamento</Text>
+              <Switch
+                value={forcarSkeleton}
+                onValueChange={setForcarSkeleton}
+                trackColor={{ false: theme.colors.border, true: theme.colors.warning }}
+                thumbColor={theme.colors.background}
+              />
+            </View>
           </View>
         )}
       </ScrollView>
@@ -392,6 +404,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.spacing.md,
+  },
+  testRowComBorda: {
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
   testLabel: {
     flex: 1,

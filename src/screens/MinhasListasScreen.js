@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
+import { useTestMode } from '../hooks/useTestMode';
 import theme from '../theme';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
@@ -195,11 +196,13 @@ export default function MinhasListasScreen() {
   const insets = useSafeAreaInsets();
   const offline = useOffline();
   const showToast = useToast();
+  const { forcarSkeleton } = useTestMode();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
   // Só mostra o skeleton se o carregamento levar mais que isso — evita
-  // o "flash" dele quando o cache local resolve quase na hora.
-  const mostrarSkeleton = useDebouncedTrue(loading, 300);
+  // o "flash" dele quando o cache local resolve quase na hora. O modo
+  // de teste pode forçar a exibição mesmo sem carregamento de verdade.
+  const exibirSkeleton = useDebouncedTrue(loading, 300) || forcarSkeleton;
   const [erro, setErro] = useState(null);
   // Horário do último snapshot confirmado pelo servidor (não do cache
   // local) — usado só pelo selo de status pra mostrar "há quanto tempo"
@@ -357,23 +360,21 @@ export default function MinhasListasScreen() {
         />
       </View>
 
-      {loading ? (
-        mostrarSkeleton ? (
-          <View style={[styles.listContent, { paddingBottom: 96 + insets.bottom }]}>
-            {Array.from({ length: QUANTIDADE_CARDS_SKELETON }).map((_, indice) => (
-              <View key={indice} style={styles.card}>
-                <SkeletonBlock
-                  width="55%"
-                  height={18}
-                  borderRadius={4}
-                  style={styles.skeletonTitulo}
-                />
-                <SkeletonBlock width="30%" height={14} borderRadius={4} />
-              </View>
-            ))}
-          </View>
-        ) : null
-      ) : erro ? (
+      {exibirSkeleton ? (
+        <View style={[styles.listContent, { paddingBottom: 96 + insets.bottom }]}>
+          {Array.from({ length: QUANTIDADE_CARDS_SKELETON }).map((_, indice) => (
+            <View key={indice} style={styles.card}>
+              <SkeletonBlock
+                width="55%"
+                height={18}
+                borderRadius={4}
+                style={styles.skeletonTitulo}
+              />
+              <SkeletonBlock width="30%" height={14} borderRadius={4} />
+            </View>
+          ))}
+        </View>
+      ) : loading ? null : erro ? (
         <FadeInView style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{erro}</Text>
         </FadeInView>

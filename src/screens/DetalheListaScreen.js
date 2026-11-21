@@ -39,6 +39,7 @@ import {
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
+import { useTestMode } from '../hooks/useTestMode';
 import theme from '../theme';
 import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
@@ -233,6 +234,18 @@ function ItemCard({ item, onAlternarStatus, onEditar }) {
           </Text>
         )}
       </TouchableOpacity>
+
+      {/* O cartão inteiro já abre a edição ao tocar — este botão é só pra
+          deixar essa ação visível, pra quem não descobriria por conta. */}
+      <TouchableOpacity
+        style={styles.itemEditarBotao}
+        onPress={() => onEditar(item)}
+        activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityLabel="Editar item"
+      >
+        <Ionicons name="pencil-outline" size={16} color={theme.colors.textSecondary} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -254,11 +267,13 @@ export default function DetalheListaScreen() {
     showToast('Não foi possível sincronizar uma alteração.');
   };
 
+  const { forcarSkeleton } = useTestMode();
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
   // Só mostra o skeleton se o carregamento levar mais que isso — evita
-  // o "flash" dele quando o cache local resolve quase na hora.
-  const mostrarSkeleton = useDebouncedTrue(loading, 300);
+  // o "flash" dele quando o cache local resolve quase na hora. O modo
+  // de teste pode forçar a exibição mesmo sem carregamento de verdade.
+  const exibirSkeleton = useDebouncedTrue(loading, 300) || forcarSkeleton;
   const [erroCarregamento, setErroCarregamento] = useState(null);
   // Horário do último snapshot confirmado pelo servidor (não do cache
   // local) — usado só pelo selo de status pra mostrar "há quanto tempo"
@@ -826,9 +841,9 @@ export default function DetalheListaScreen() {
       </View>
 
       <View style={styles.totalBar}>
-        {loading ? (
-          mostrarSkeleton ? <SkeletonBlock width={160} height={14} borderRadius={4} /> : null
-        ) : temItemPendenteComPreco ? (
+        {exibirSkeleton ? (
+          <SkeletonBlock width={160} height={14} borderRadius={4} />
+        ) : loading ? null : temItemPendenteComPreco ? (
           <Text style={styles.totalBarTexto}>
             Total estimado: <Text style={styles.totalBarValor}>{formatarPreco(totalEstimado)}</Text>
           </Text>
@@ -839,7 +854,7 @@ export default function DetalheListaScreen() {
 
       <View style={styles.listaContainer}>
         <FlatList
-          data={loading || erroCarregamento ? [] : linhasLista}
+          data={loading || erroCarregamento || exibirSkeleton ? [] : linhasLista}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
             styles.listContent,
@@ -887,37 +902,35 @@ export default function DetalheListaScreen() {
             ) : null
           }
           ListEmptyComponent={
-            loading ? (
-              mostrarSkeleton ? (
-                <View>
-                  {Array.from({ length: QUANTIDADE_ITENS_SKELETON }).map((_, indice) => (
-                    <View key={indice} style={styles.itemCard}>
+            exibirSkeleton ? (
+              <View>
+                {Array.from({ length: QUANTIDADE_ITENS_SKELETON }).map((_, indice) => (
+                  <View key={indice} style={styles.itemCard}>
+                    <SkeletonBlock
+                      width={26}
+                      height={26}
+                      borderRadius={13}
+                      style={styles.skeletonCheckbox}
+                    />
+                    <SkeletonBlock
+                      width={44}
+                      height={44}
+                      borderRadius={12}
+                      style={styles.skeletonImagem}
+                    />
+                    <View style={styles.itemInfo}>
                       <SkeletonBlock
-                        width={26}
-                        height={26}
-                        borderRadius={13}
-                        style={styles.skeletonCheckbox}
+                        width="70%"
+                        height={16}
+                        borderRadius={4}
+                        style={styles.skeletonNome}
                       />
-                      <SkeletonBlock
-                        width={44}
-                        height={44}
-                        borderRadius={12}
-                        style={styles.skeletonImagem}
-                      />
-                      <View style={styles.itemInfo}>
-                        <SkeletonBlock
-                          width="70%"
-                          height={16}
-                          borderRadius={4}
-                          style={styles.skeletonNome}
-                        />
-                        <SkeletonBlock width="40%" height={12} borderRadius={4} />
-                      </View>
+                      <SkeletonBlock width="40%" height={12} borderRadius={4} />
                     </View>
-                  ))}
-                </View>
-              ) : null
-            ) : erroCarregamento ? (
+                  </View>
+                ))}
+              </View>
+            ) : loading ? null : erroCarregamento ? (
               <FadeInView style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>{erroCarregamento}</Text>
               </FadeInView>
@@ -1467,6 +1480,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  itemEditarBotao: {
+    marginLeft: theme.spacing.sm,
+    padding: theme.spacing.xs,
   },
   itemImagemBox: {
     width: 44,
