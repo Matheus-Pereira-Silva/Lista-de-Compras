@@ -82,6 +82,8 @@ function statusEfetivo(item, idsTransicionando) {
 // antigo pro mais novo. Itens recém-criados offline ainda não tem
 // criadoEm resolvido pelo servidor (vem null) — tratamos como o mais
 // recente do grupo, então vão pro fim dele.
+const SEM_CATEGORIA = 'Sem categoria';
+
 function ordenarItens(itens, idsTransicionando) {
   return [...itens].sort((a, b) => {
     const aComprado = statusEfetivo(a, idsTransicionando) === 'comprado' ? 1 : 0;
@@ -254,6 +256,9 @@ export default function DetalheListaScreen() {
 
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Só mostra o skeleton se o carregamento levar mais que isso — evita
+  // o "flash" dele quando o cache local resolve quase na hora.
+  const mostrarSkeleton = useDebouncedTrue(loading, 300);
   const [erroCarregamento, setErroCarregamento] = useState(null);
   // Horário do último snapshot confirmado pelo servidor (não do cache
   // local) — usado só pelo selo de status pra mostrar "há quanto tempo"
@@ -399,24 +404,47 @@ export default function DetalheListaScreen() {
     (item) => statusEfetivo(item, idsTransicionando) === 'comprado'
   ).length;
 
-  // Insere o cabeçalho "Comprados (N)" antes do primeiro item do grupo, e
-  // some com os itens do grupo (mas não com o cabeçalho) quando recolhido.
+  // Agrupa os pendentes por categoria (facilita comprar por corredor) só
+  // quando há mais de uma categoria entre eles — com uma categoria só,
+  // o cabeçalho seria ruído. Dentro de cada grupo, mantém a ordem
+  // cronológica já calculada. "Sem categoria" sempre fica por último.
+  // Depois, insere o cabeçalho "Comprados (N)" e, se expandido, os
+  // itens comprados — igual ao comportamento anterior.
   const linhasLista = useMemo(() => {
     const linhas = [];
-    let cabecalhoInserido = false;
 
-    itensOrdenados.forEach((item) => {
-      const comprado = statusEfetivo(item, idsTransicionando) === 'comprado';
+    const pendentes = itensOrdenados.filter(
+      (item) => statusEfetivo(item, idsTransicionando) !== 'comprado'
+    );
+    const comprados = itensOrdenados.filter(
+      (item) => statusEfetivo(item, idsTransicionando) === 'comprado'
+    );
 
-      if (comprado && !cabecalhoInserido) {
-        linhas.push({ id: '__cabecalhoComprados', __tipo: 'cabecalhoComprados' });
-        cabecalhoInserido = true;
-      }
-
-      if (comprado && !mostrarComprados) return;
-
-      linhas.push(item);
+    const grupos = new Map();
+    pendentes.forEach((item) => {
+      const chave = item.categoria?.trim() || SEM_CATEGORIA;
+      if (!grupos.has(chave)) grupos.set(chave, []);
+      grupos.get(chave).push(item);
     });
+
+    if (grupos.size > 1) {
+      const chaves = [...grupos.keys()]
+        .filter((chave) => chave !== SEM_CATEGORIA)
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      if (grupos.has(SEM_CATEGORIA)) chaves.push(SEM_CATEGORIA);
+
+      chaves.forEach((chave) => {
+        linhas.push({ id: `__categoria_${chave}`, __tipo: 'cabecalhoCategoria', categoria: chave });
+        linhas.push(...grupos.get(chave));
+      });
+    } else {
+      linhas.push(...pendentes);
+    }
+
+    if (comprados.length > 0) {
+      linhas.push({ id: '__cabecalhoComprados', __tipo: 'cabecalhoComprados' });
+      if (mostrarComprados) linhas.push(...comprados);
+    }
 
     return linhas;
   }, [itensOrdenados, idsTransicionando, mostrarComprados]);
@@ -801,7 +829,7 @@ export default function DetalheListaScreen() {
 
       <View style={styles.totalBar}>
         {loading ? (
-          <SkeletonBlock width={160} height={14} borderRadius={4} />
+          mostrarSkeleton ? <SkeletonBlock width={160} height={14} borderRadius={4} /> : null
         ) : temItemPendenteComPreco ? (
           <Text style={styles.totalBarTexto}>
             Total estimado: <Text style={styles.totalBarValor}>{formatarPreco(totalEstimado)}</Text>
@@ -862,33 +890,35 @@ export default function DetalheListaScreen() {
           }
           ListEmptyComponent={
             loading ? (
-              <View>
-                {Array.from({ length: QUANTIDADE_ITENS_SKELETON }).map((_, indice) => (
-                  <View key={indice} style={styles.itemCard}>
-                    <SkeletonBlock
-                      width={26}
-                      height={26}
-                      borderRadius={13}
-                      style={styles.skeletonCheckbox}
-                    />
-                    <SkeletonBlock
-                      width={44}
-                      height={44}
-                      borderRadius={12}
-                      style={styles.skeletonImagem}
-                    />
-                    <View style={styles.itemInfo}>
+              mostrarSkeleton ? (
+                <View>
+                  {Array.from({ length: QUANTIDADE_ITENS_SKELETON }).map((_, indice) => (
+                    <View key={indice} style={styles.itemCard}>
                       <SkeletonBlock
-                        width="70%"
-                        height={16}
-                        borderRadius={4}
-                        style={styles.skeletonNome}
+                        width={26}
+                        height={26}
+                        borderRadius={13}
+                        style={styles.skeletonCheckbox}
                       />
-                      <SkeletonBlock width="40%" height={12} borderRadius={4} />
+                      <SkeletonBlock
+                        width={44}
+                        height={44}
+                        borderRadius={12}
+                        style={styles.skeletonImagem}
+                      />
+                      <View style={styles.itemInfo}>
+                        <SkeletonBlock
+                          width="70%"
+                          height={16}
+                          borderRadius={4}
+                          style={styles.skeletonNome}
+                        />
+                        <SkeletonBlock width="40%" height={12} borderRadius={4} />
+                      </View>
                     </View>
-                  </View>
-                ))}
-              </View>
+                  ))}
+                </View>
+              ) : null
             ) : erroCarregamento ? (
               <FadeInView style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>{erroCarregamento}</Text>
@@ -907,7 +937,12 @@ export default function DetalheListaScreen() {
             )
           }
           renderItem={({ item }) =>
-            item.__tipo === 'cabecalhoComprados' ? (
+            item.__tipo === 'cabecalhoCategoria' ? (
+              <View style={[styles.cabecalhoCategoria, styles.linhaComIcone]}>
+                <Ionicons name="pricetag-outline" size={12} color={theme.colors.textSecondary} />
+                <Text style={styles.cabecalhoCategoriaTexto}> {item.categoria}</Text>
+              </View>
+            ) : item.__tipo === 'cabecalhoComprados' ? (
               <TouchableOpacity
                 onPress={alternarMostrarComprados}
                 activeOpacity={0.7}
@@ -1383,6 +1418,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginBottom: 8,
     minHeight: 44,
+  },
+  cabecalhoCategoria: {
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
+  },
+  cabecalhoCategoriaTexto: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   cabecalhoCompradosTexto: {
     fontSize: 13,

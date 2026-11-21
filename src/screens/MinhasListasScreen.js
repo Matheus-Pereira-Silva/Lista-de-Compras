@@ -197,6 +197,9 @@ export default function MinhasListasScreen() {
   const showToast = useToast();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Só mostra o skeleton se o carregamento levar mais que isso — evita
+  // o "flash" dele quando o cache local resolve quase na hora.
+  const mostrarSkeleton = useDebouncedTrue(loading, 300);
   const [erro, setErro] = useState(null);
   // Horário do último snapshot confirmado pelo servidor (não do cache
   // local) — usado só pelo selo de status pra mostrar "há quanto tempo"
@@ -355,19 +358,21 @@ export default function MinhasListasScreen() {
       </View>
 
       {loading ? (
-        <View style={[styles.listContent, { paddingBottom: 96 + insets.bottom }]}>
-          {Array.from({ length: QUANTIDADE_CARDS_SKELETON }).map((_, indice) => (
-            <View key={indice} style={styles.card}>
-              <SkeletonBlock
-                width="55%"
-                height={18}
-                borderRadius={4}
-                style={styles.skeletonTitulo}
-              />
-              <SkeletonBlock width="30%" height={14} borderRadius={4} />
-            </View>
-          ))}
-        </View>
+        mostrarSkeleton ? (
+          <View style={[styles.listContent, { paddingBottom: 96 + insets.bottom }]}>
+            {Array.from({ length: QUANTIDADE_CARDS_SKELETON }).map((_, indice) => (
+              <View key={indice} style={styles.card}>
+                <SkeletonBlock
+                  width="55%"
+                  height={18}
+                  borderRadius={4}
+                  style={styles.skeletonTitulo}
+                />
+                <SkeletonBlock width="30%" height={14} borderRadius={4} />
+              </View>
+            ))}
+          </View>
+        ) : null
       ) : erro ? (
         <FadeInView style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{erro}</Text>
