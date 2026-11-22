@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   LayoutAnimation,
@@ -39,7 +40,7 @@ import {
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
-import { useSkeletonForcado } from '../hooks/useTestMode';
+import { useSkeletonForcado, useTestMode } from '../hooks/useTestMode';
 import theme from '../theme';
 import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
@@ -268,6 +269,7 @@ export default function DetalheListaScreen() {
   };
 
   const skeletonForcadoAtivo = useSkeletonForcado();
+  const { forcarSpinner } = useTestMode();
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
   // Nº de tentativas de assinar os itens — incrementar refaz o onSnapshot
@@ -886,6 +888,12 @@ export default function DetalheListaScreen() {
         />
       </View>
 
+      {forcarSpinner ? (
+        <View style={styles.spinnerContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : (
+        <>
       <View style={styles.totalBar}>
         {exibirSkeleton ? (
           <SkeletonBlock width={160} height={14} borderRadius={4} />
@@ -1021,6 +1029,8 @@ export default function DetalheListaScreen() {
           }
         />
       </View>
+        </>
+      )}
 
       <TouchableOpacity
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
@@ -1460,6 +1470,11 @@ const styles = StyleSheet.create({
   },
   listaContainer: {
     flex: 1,
+  },
+  spinnerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listContent: {
     paddingHorizontal: 24,

@@ -1,19 +1,35 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 // Estado só de teste (painel "Modo de teste" em Configurações) —
-// compartilhado via Context porque o interruptor fica numa tela e o
-// skeleton que ele força aparecer fica em outras, que continuam
-// montadas por baixo na pilha de navegação.
+// compartilhado via Context porque os interruptores ficam numa tela e
+// o skeleton/spinner que eles forçam aparecer fica em outras, que
+// continuam montadas por baixo na pilha de navegação.
 const TestModeContext = createContext({
   forcarSkeleton: false,
   setForcarSkeleton: () => {},
+  forcarSpinner: false,
+  setForcarSpinner: () => {},
 });
 
 export function TestModeProvider({ children }) {
-  const [forcarSkeleton, setForcarSkeleton] = useState(false);
+  const [forcarSkeleton, setForcarSkeletonState] = useState(false);
+  const [forcarSpinner, setForcarSpinnerState] = useState(false);
+
+  // Mutuamente exclusivos — ligar um desliga o outro.
+  const setForcarSkeleton = (valor) => {
+    setForcarSkeletonState(valor);
+    if (valor) setForcarSpinnerState(false);
+  };
+
+  const setForcarSpinner = (valor) => {
+    setForcarSpinnerState(valor);
+    if (valor) setForcarSkeletonState(false);
+  };
 
   return (
-    <TestModeContext.Provider value={{ forcarSkeleton, setForcarSkeleton }}>
+    <TestModeContext.Provider
+      value={{ forcarSkeleton, setForcarSkeleton, forcarSpinner, setForcarSpinner }}
+    >
       {children}
     </TestModeContext.Provider>
   );

@@ -42,7 +42,7 @@ export default function ConfiguracoesScreen() {
   // proativa (o NetInfo.fetch() em excluirConta continua como segunda
   // checagem, caso a conexão caia entre habilitar o botão e tocar nele).
   const offline = useOffline();
-  const { forcarSkeleton, setForcarSkeleton } = useTestMode();
+  const { forcarSkeleton, setForcarSkeleton, forcarSpinner, setForcarSpinner } = useTestMode();
 
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const [senha, setSenha] = useState('');
@@ -226,6 +226,16 @@ export default function ConfiguracoesScreen() {
                 thumbColor={theme.colors.background}
               />
             </View>
+
+            <View style={[styles.testRow, styles.testRowComBorda]}>
+              <Text style={styles.testLabel}>Forçar spinner de carregamento (sem skeleton)</Text>
+              <Switch
+                value={forcarSpinner}
+                onValueChange={setForcarSpinner}
+                trackColor={{ false: theme.colors.border, true: theme.colors.warning }}
+                thumbColor={theme.colors.background}
+              />
+            </View>
           </View>
         )}
       </ScrollView>
@@ -370,6 +380,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.spacing.md,
+  },
+  testRowComBorda: {
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
   testLabel: {
     flex: 1,

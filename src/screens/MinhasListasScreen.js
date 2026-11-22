@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -25,7 +26,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
-import { useSkeletonForcado } from '../hooks/useTestMode';
+import { useSkeletonForcado, useTestMode } from '../hooks/useTestMode';
 import theme from '../theme';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
@@ -233,6 +234,7 @@ export default function MinhasListasScreen() {
   const offline = useOffline();
   const showToast = useToast();
   const skeletonForcadoAtivo = useSkeletonForcado();
+  const { forcarSpinner } = useTestMode();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
   // Só mostra o skeleton se o carregamento levar mais que isso — evita
@@ -396,7 +398,11 @@ export default function MinhasListasScreen() {
         />
       </View>
 
-      {exibirSkeleton ? (
+      {forcarSpinner ? (
+        <View style={styles.spinnerContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : exibirSkeleton ? (
         <View style={[styles.listContent, { paddingBottom: 96 + insets.bottom }]}>
           {Array.from({ length: QUANTIDADE_CARDS_SKELETON }).map((_, indice) => (
             <View key={indice} style={styles.card}>
@@ -642,6 +648,11 @@ const styles = StyleSheet.create({
   },
   listaContainer: {
     flex: 1,
+  },
+  spinnerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listContent: {
     paddingHorizontal: theme.spacing.xl,
