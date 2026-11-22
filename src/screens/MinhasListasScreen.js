@@ -25,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
-import { useTestMode } from '../hooks/useTestMode';
+import { useSkeletonForcado } from '../hooks/useTestMode';
 import theme from '../theme';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
 import { PersistentFade } from '../components/FadePresence';
@@ -232,13 +232,13 @@ export default function MinhasListasScreen() {
   const insets = useSafeAreaInsets();
   const offline = useOffline();
   const showToast = useToast();
-  const { forcarSkeleton } = useTestMode();
+  const skeletonForcadoAtivo = useSkeletonForcado();
   const [listas, setListas] = useState([]);
   const [loading, setLoading] = useState(true);
   // Só mostra o skeleton se o carregamento levar mais que isso — evita
   // o "flash" dele quando o cache local resolve quase na hora. O modo
-  // de teste pode forçar a exibição mesmo sem carregamento de verdade.
-  const exibirSkeleton = useDebouncedTrue(loading, 300) || forcarSkeleton;
+  // de teste pode forçar a exibição por um tempo fixo, mesmo já carregado.
+  const exibirSkeleton = useDebouncedTrue(loading, 300) || skeletonForcadoAtivo;
   const [erro, setErro] = useState(null);
   // Horário do último snapshot confirmado pelo servidor (não do cache
   // local) — usado só pelo selo de status pra mostrar "há quanto tempo"

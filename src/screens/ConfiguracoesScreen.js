@@ -22,9 +22,7 @@ import {
 import {
   arrayRemove,
   collection,
-  disableNetwork,
   doc,
-  enableNetwork,
   getDocs,
   query,
   updateDoc,
@@ -36,11 +34,6 @@ import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
 import { useTestMode } from '../hooks/useTestMode';
 import theme from '../theme';
-
-// Módulo (não AsyncStorage): sobrevive à tela sendo desmontada ao
-// navegar pra outro lugar e voltar, mas sempre volta a `false` quando o
-// processo JS reinicia — ou seja, quando o app é fechado de verdade.
-let simulacaoFalhaAtiva = false;
 
 export default function ConfiguracoesScreen() {
   const navigation = useNavigation();
@@ -55,23 +48,6 @@ export default function ConfiguracoesScreen() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
-  const [simulandoFalha, setSimulandoFalha] = useState(simulacaoFalhaAtiva);
-
-  // Só pra teste: derruba (ou restaura) o acesso do Firestore ao
-  // servidor sem desligar o Wi-Fi/dados do aparelho — assim dá pra ver
-  // o selo de status reagir a uma falha de sincronização de verdade.
-  const alternarSimulacaoFalha = (valor) => {
-    simulacaoFalhaAtiva = valor;
-    setSimulandoFalha(valor);
-
-    if (valor) {
-      disableNetwork(db).catch((error) =>
-        console.error('Erro ao simular falha de conexão:', error)
-      );
-    } else {
-      enableNetwork(db).catch((error) => console.error('Erro ao restaurar conexão:', error));
-    }
-  };
 
   const abrirConfirmacao = () => {
     setSenha('');
@@ -242,17 +218,7 @@ export default function ConfiguracoesScreen() {
               aparece pra usuários finais.
             </Text>
             <View style={styles.testRow}>
-              <Text style={styles.testLabel}>Simular falha de conexão com o servidor</Text>
-              <Switch
-                value={simulandoFalha}
-                onValueChange={alternarSimulacaoFalha}
-                trackColor={{ false: theme.colors.border, true: theme.colors.warning }}
-                thumbColor={theme.colors.background}
-              />
-            </View>
-
-            <View style={[styles.testRow, styles.testRowComBorda]}>
-              <Text style={styles.testLabel}>Forçar skeleton de carregamento</Text>
+              <Text style={styles.testLabel}>Simular carregamento lento</Text>
               <Switch
                 value={forcarSkeleton}
                 onValueChange={setForcarSkeleton}
@@ -404,12 +370,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.spacing.md,
-  },
-  testRowComBorda: {
-    marginTop: theme.spacing.md,
-    paddingTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
   },
   testLabel: {
     flex: 1,

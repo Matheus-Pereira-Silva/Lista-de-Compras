@@ -39,7 +39,7 @@ import {
 
 import { auth, db } from '../services/firebase';
 import { useOffline } from '../hooks/useOffline';
-import { useTestMode } from '../hooks/useTestMode';
+import { useSkeletonForcado } from '../hooks/useTestMode';
 import theme from '../theme';
 import produtosLocaisRaw from '../data/produtos.json';
 import { FadeInView, SkeletonBlock } from '../components/SkeletonCard';
@@ -267,7 +267,7 @@ export default function DetalheListaScreen() {
     showToast('Não foi possível sincronizar uma alteração.');
   };
 
-  const { forcarSkeleton } = useTestMode();
+  const skeletonForcadoAtivo = useSkeletonForcado();
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
   // Nº de tentativas de assinar os itens — incrementar refaz o onSnapshot
@@ -284,8 +284,8 @@ export default function DetalheListaScreen() {
   const itensPrecisamRetryRef = useRef(false);
   // Só mostra o skeleton se o carregamento levar mais que isso — evita
   // o "flash" dele quando o cache local resolve quase na hora. O modo
-  // de teste pode forçar a exibição mesmo sem carregamento de verdade.
-  const exibirSkeleton = useDebouncedTrue(loading, 300) || forcarSkeleton;
+  // de teste pode forçar a exibição por um tempo fixo, mesmo já carregado.
+  const exibirSkeleton = useDebouncedTrue(loading, 300) || skeletonForcadoAtivo;
   const [erroCarregamento, setErroCarregamento] = useState(null);
   // Horário do último snapshot confirmado pelo servidor (não do cache
   // local) — usado só pelo selo de status pra mostrar "há quanto tempo"
