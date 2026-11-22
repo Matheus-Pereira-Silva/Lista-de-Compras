@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -52,6 +52,13 @@ function ListaCard({ lista, onPress, onPendenteItensChange }) {
   const [itens, setItens] = useState(null); // null = ainda sem nenhum snapshot
   const [erroItens, setErroItens] = useState(null);
 
+  // Nº de tentativas de assinar os itens — incrementar refaz o onSnapshot.
+  // Só usado quando a lista ainda não tinha chegado ao servidor (ver
+  // efeitos abaixo); fora desse caso a escuta nunca precisa ser refeita.
+  const [tentativaItens, setTentativaItens] = useState(0);
+  const listaPendenteRef = useRef(!!lista.pendenteSincronizacao);
+  const itensPrecisamRetryRef = useRef(false);
+
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'listas', lista.id, 'itens'),
@@ -67,6 +74,20 @@ function ListaCard({ lista, onPress, onPendenteItensChange }) {
       },
       (error) => {
         console.error('Erro ao carregar itens da lista', lista.id, error);
+
+        // As regras dos itens fazem get() no documento da lista — se ela
+        // ainda está pendente (recém-criada offline/rede lenta/modo de
+        // teste), o servidor nega por não achá-la ainda, não por falta de
+        // permissão de verdade. Não mostra erro: fica no skeleton e tenta
+        // de novo quando a lista confirmar (ver efeito abaixo).
+        if (error.code === 'firestore/permission-denied' && listaPendenteRef.current) {
+          itensPrecisamRetryRef.current = true;
+          console.log(
+            `Itens da lista ${lista.id}: permission-denied com a lista ainda pendente — aguardando confirmação do servidor pra tentar de novo.`
+          );
+          return;
+        }
+
         // Mantém o que já tinha (não reseta pra null) — se já carregou antes,
         // continua mostrando o último estado bom. Se nunca carregou, o erro
         // vira mensagem no lugar do skeleton (em vez de ficar preso nele).
@@ -79,7 +100,22 @@ function ListaCard({ lista, onPress, onPendenteItensChange }) {
     );
 
     return unsubscribe;
-  }, [lista.id]);
+  }, [lista.id, tentativaItens]);
+
+  // Detecta a lista passando de pendente pra confirmada pelo servidor —
+  // se os itens ficaram travados num permission-denied esperando isso,
+  // assina de novo agora, sem recarregar o card inteiro.
+  useEffect(() => {
+    const pendenteAntes = listaPendenteRef.current;
+    const pendenteAgora = !!lista.pendenteSincronizacao;
+    listaPendenteRef.current = pendenteAgora;
+
+    if (pendenteAntes && !pendenteAgora && itensPrecisamRetryRef.current) {
+      itensPrecisamRetryRef.current = false;
+      console.log(`Lista ${lista.id} confirmada pelo servidor — assinando os itens de novo.`);
+      setTentativaItens((tentativa) => tentativa + 1);
+    }
+  }, [lista.id, lista.pendenteSincronizacao]);
 
   const algumItemPendente = itens?.some((item) => item.pendenteSincronizacao) ?? false;
 
