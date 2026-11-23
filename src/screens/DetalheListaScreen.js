@@ -618,17 +618,35 @@ export default function DetalheListaScreen() {
     const nomeTrim = nome.trim();
     if (!nomeTrim) return;
 
-    const categoriaTrim = categoria.trim();
-    // deleteField() remove o campo se o usuário limpou um valor que já
-    // existia (diferente da criação, onde o campo simplesmente não é
-    // incluído no documento).
-    const dadosAtualizados = {
-      nome: nomeTrim,
-      quantidade: `${quantidadeNumero} ${unidade}`,
-      categoria: categoriaTrim ? categoriaTrim : deleteField(),
-      preco: precoCentavos != null ? precoCentavos / 100 : deleteField(),
-      icone: iconeSelecionado ? iconeSelecionado : deleteField(),
-    };
+    const quantidadeNova = `${quantidadeNumero} ${unidade}`;
+    const categoriaNova = categoria.trim() || null;
+    const precoNovo = precoCentavos != null ? precoCentavos / 100 : null;
+    const iconeNovo = iconeSelecionado || null;
+
+    // Só envia os campos que realmente mudaram em relação ao item
+    // original — uma edição feita offline não deve sobrescrever, ao
+    // sincronizar, um campo que outra pessoa alterou nesse meio tempo.
+    // deleteField() continua sendo usado quando o campo existia e foi
+    // limpo (diferente da criação, onde ele simplesmente não entra).
+    const dadosAtualizados = {};
+
+    if (nomeTrim !== itemEditando.nome) {
+      dadosAtualizados.nome = nomeTrim;
+    }
+    if (quantidadeNova !== itemEditando.quantidade) {
+      dadosAtualizados.quantidade = quantidadeNova;
+    }
+    if (categoriaNova !== (itemEditando.categoria ?? null)) {
+      dadosAtualizados.categoria = categoriaNova ?? deleteField();
+    }
+    if (precoNovo !== (itemEditando.preco ?? null)) {
+      dadosAtualizados.preco = precoNovo ?? deleteField();
+    }
+    if (iconeNovo !== (itemEditando.icone ?? null)) {
+      dadosAtualizados.icone = iconeNovo ?? deleteField();
+    }
+
+    if (Object.keys(dadosAtualizados).length === 0) return;
 
     updateDoc(doc(db, 'listas', listaId, 'itens', itemEditando.id), dadosAtualizados).catch(
       avisarFalhaSincronizacao('Erro ao editar item:')
