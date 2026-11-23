@@ -55,22 +55,39 @@ export default function EntrarListaScreen() {
       }
 
       const { listaId } = conviteSnapshot.data();
-      const listaSnapshot = await getDoc(doc(db, 'listas', listaId));
-      if (!listaSnapshot.exists()) {
-        setErro('Código inválido.');
-        return;
-      }
-
-      const listaDados = listaSnapshot.data();
       const uid = auth.currentUser.uid;
-      if (!listaDados.membros?.includes(uid)) {
+
+      // Não lê o documento da lista antes de entrar: as regras só
+      // permitem leitura pra quem já é membro, e quem está entrando
+      // ainda não é. A própria regra de update já aceita um não-membro
+      // se a única mudança for 'membros' virando o array antigo + o
+      // próprio uid — então escreve direto, sem checagem prévia
+      // (arrayUnion é idempotente, então reentrar com o mesmo código
+      // não duplica nem falha).
+      try {
         await updateDoc(doc(db, 'listas', listaId), {
           membros: arrayUnion(uid),
         });
+      } catch (updateError) {
+        if (updateError.code === 'firestore/not-found') {
+          setErro('Código inválido.');
+          return;
+        }
+        throw updateError;
+      }
+
+      // Já é membro agora — essa leitura só serve pro nome aparecer de
+      // cara; se falhar, a tela de detalhe busca os dados dela mesma.
+      let listaNome;
+      try {
+        const listaSnapshot = await getDoc(doc(db, 'listas', listaId));
+        listaNome = listaSnapshot.data()?.nome;
+      } catch (error) {
+        console.error('Erro ao buscar nome da lista após entrar:', error);
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      navigation.replace('DetalheLista', { listaId, listaNome: listaDados.nome });
+      navigation.replace('DetalheLista', { listaId, listaNome });
     } catch (error) {
       console.error('Erro ao entrar na lista:', error);
       setErro('Não foi possível entrar. Tente novamente.');
